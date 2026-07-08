@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pandas as pd
@@ -10,6 +11,8 @@ import pytest
 from src.base_referencia import BaseReferencia
 from src.config import Config
 from src.validacao import (
+  CAMPOS_OBRIGATORIOS,
+  CamposObrigatoriosVaziosError,
   ConferenciaLotes,
   Divergencia,
   RegistroLote,
@@ -17,15 +20,29 @@ from src.validacao import (
   ResultadoValidacao,
   registro_de_linha,
   rn07_campos_obrigatorios,
+  valida_campos_obrigatorios,
+  valida_estrutura,
 )
+
+
+def registro_completo() -> dict[str, str]:
+  """Registro com todos os campos obrigatórios preenchidos."""
+  return {
+    "lote_id": "LOTE-001",
+    "produto": "PROD-A",
+    "linha": "L1",
+    "turno": "MANHA",
+    "status": "APROVADO",
+    "responsavel": "João Silva",
+  }
 
 
 @pytest.fixture
 def config() -> Config:
   """Configuração padrão para testes."""
   return Config(
-    caminho_planilha_entrada=__import__("pathlib").Path("data/samples/planilha_lotes.xlsx"),
-    caminho_saida_relatorio=__import__("pathlib").Path("data/output/divergencias.xlsx"),
+    caminho_planilha_entrada=Path("data/samples/planilha_lotes.xlsx"),
+    caminho_saida_relatorio=Path("data/output/divergencias.xlsx"),
     caminho_base_referencia=None,
     log_level="INFO",
   )
@@ -54,6 +71,98 @@ def registro_valido() -> RegistroLote:
     data_validade="2027-01-15",
     status="APROVADO",
   )
+
+
+class TestValidaEstrutura:
+  """Testes da Issue #1 — validação de estrutura da planilha."""
+
+  def test_estrutura_completa(self) -> None:
+    df = pd.DataFrame([registro_completo()])
+    resultado = valida_estrutura(df)
+
+    assert resultado.estrutura_completa is True
+    assert resultado.colunas_ausentes == []
+    assert resultado.colunas_presentes == CAMPOS_OBRIGATORIOS
+
+  def test_nao_falha_quando_falta_coluna(self) -> None:
+    df = pd.DataFrame([{"lote_id": "LOTE-001", "produto": "PROD-A"}])
+    resultado = valida_estrutura(df)
+
+    assert resultado.estrutura_completa is False
+    assert "linha" in resultado.colunas_ausentes
+    assert "turno" in resultado.colunas_ausentes
+    assert "status" in resultado.colunas_ausentes
+    assert "responsavel" in resultado.colunas_ausentes
+
+  def test_dataframe_vazio_nao_estoura_erro(self) -> None:
+    df = pd.DataFrame()
+    resultado = valida_estrutura(df)
+
+    assert resultado.estrutura_completa is False
+    assert len(resultado.colunas_ausentes) == len(CAMPOS_OBRIGATORIOS)
+
+
+class TestValidaCamposObrigatorios:
+  """Testes da Issue #1 — campos obrigatórios vazios."""
+
+  def test_registro_valido_nao_levanta_erro(self) -> None:
+    valida_campos_obrigatorios(registro_completo())
+
+  def test_registro_valido_como_series(self) -> None:
+    valida_campos_obrigatorios(pd.Series(registro_completo()))
+
+  @pytest.mark.parametrize("campo_vazio", CAMPOS_OBRIGATORIOS)
+  def test_detecta_cada_campo_vazio(self, campo_vazio: str) -> None:
+    registro = registro_completo()
+    registro[campo_vazio] = ""
+
+    with pytest.raises(CamposObrigatoriosVaziosError) as exc_info:
+      valida_campos_obrigatorios(registro)
+
+    assert campo_vazio in exc_info.value.campos_vazios
+
+  @pytest.mark.parametrize("campo_vazio", CAMPOS_OBRIGATORIOS)
+  def test_detecta_campo_ausente(self, campo_vazio: str) -> None:
+    registro = registro_completo()
+    del registro[campo_vazio]
+
+    with pytest.raises(CamposObrigatoriosVaziosError) as exc_info:
+      valida_campos_obrigatorios(registro)
+
+    assert campo_vazio in exc_info.value.campos_vazios
+
+  @pytest.mark.parametrize(
+    "valor_vazio",
+    [None, "", "   ", float("nan")],
+  )
+  def test_detecta_valores_considerados_vazios(self, valor_vazio: object) -> None:
+    registro = registro_completo()
+    registro["status"] = valor_vazio
+
+    with pytest.raises(CamposObrigatoriosVaziosError) as exc_info:
+      valida_campos_obrigatorios(registro)
+
+    assert "status" in exc_info.value.campos_vazios
+
+  def test_detecta_multiplos_campos_vazios(self) -> None:
+    registro = {
+      "lote_id": "",
+      "produto": None,
+      "linha": "L1",
+      "turno": "",
+      "status": "APROVADO",
+      "responsavel": "   ",
+    }
+
+    with pytest.raises(CamposObrigatoriosVaziosError) as exc_info:
+      valida_campos_obrigatorios(registro)
+
+    assert exc_info.value.campos_vazios == [
+      "lote_id",
+      "produto",
+      "turno",
+      "responsavel",
+    ]
 
 
 class TestRegistroLote:
@@ -151,10 +260,10 @@ class TestConferenciaLotes:
   def test_processar_planilha_chama_validacao_por_linha(
     self,
     conferencia: ConferenciaLotes,
-    tmp_path: pytest.TempPathFactory,
+    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
   ) -> None:
-    caminho = tmp_path.mktemp("data") / "entrada.xlsx"
+    caminho = tmp_path / "entrada.xlsx"
     df = pd.DataFrame([
       {
         "numero_lote": "LOTE-001",

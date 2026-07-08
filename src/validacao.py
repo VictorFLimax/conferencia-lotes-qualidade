@@ -11,6 +11,101 @@ import pandas as pd
 if TYPE_CHECKING:
   from src.base_referencia import BaseReferencia
 
+COLUNAS_ESPERADAS: list[str] = [
+  "lote_id",
+  "produto",
+  "linha",
+  "turno",
+  "status",
+  "responsavel",
+]
+
+CAMPOS_OBRIGATORIOS: list[str] = list(COLUNAS_ESPERADAS)
+
+
+class ErroValidacao(Exception):
+  """Exceção base para erros de validação de lotes."""
+
+
+class CamposObrigatoriosVaziosError(ErroValidacao):
+  """Lançada quando um ou mais campos obrigatórios estão vazios."""
+
+  def __init__(self, campos_vazios: list[str]) -> None:
+    self.campos_vazios = campos_vazios
+    campos = ", ".join(campos_vazios)
+    super().__init__(f"Campos obrigatórios vazios: {campos}")
+
+
+@dataclass(frozen=True)
+class ResultadoEstrutura:
+  """Resultado da verificação de estrutura da planilha."""
+
+  colunas_esperadas: list[str]
+  colunas_presentes: list[str]
+  colunas_ausentes: list[str]
+  estrutura_completa: bool
+
+
+def _valor_vazio(valor: Any) -> bool:
+  """Retorna True se o valor for considerado vazio."""
+  if valor is None:
+    return True
+  if isinstance(valor, float) and pd.isna(valor):
+    return True
+  if isinstance(valor, str) and valor.strip() == "":
+    return True
+  return False
+
+
+def _obter_valor(registro: dict[str, Any] | pd.Series, campo: str) -> Any:
+  """Obtém o valor de um campo a partir de dict ou Series."""
+  if isinstance(registro, pd.Series):
+    if campo not in registro.index:
+      return None
+    return registro[campo]
+  return registro.get(campo)
+
+
+def valida_estrutura(dados: pd.DataFrame) -> ResultadoEstrutura:
+  """
+  Verifica a estrutura dos dados sem interromper o fluxo se faltar coluna.
+
+  Args:
+    dados: DataFrame com os registros da planilha de entrada.
+
+  Returns:
+    Resultado indicando colunas presentes, ausentes e se a estrutura está completa.
+  """
+  colunas_presentes = [col for col in COLUNAS_ESPERADAS if col in dados.columns]
+  colunas_ausentes = [col for col in COLUNAS_ESPERADAS if col not in dados.columns]
+
+  return ResultadoEstrutura(
+    colunas_esperadas=list(COLUNAS_ESPERADAS),
+    colunas_presentes=colunas_presentes,
+    colunas_ausentes=colunas_ausentes,
+    estrutura_completa=len(colunas_ausentes) == 0,
+  )
+
+
+def valida_campos_obrigatorios(registro: dict[str, Any] | pd.Series) -> None:
+  """
+  Verifica se os campos obrigatórios estão preenchidos.
+
+  Args:
+    registro: Linha ou dicionário com os dados do lote.
+
+  Raises:
+    CamposObrigatoriosVaziosError: Se algum campo obrigatório estiver vazio.
+  """
+  campos_vazios = [
+    campo
+    for campo in CAMPOS_OBRIGATORIOS
+    if _valor_vazio(_obter_valor(registro, campo))
+  ]
+
+  if campos_vazios:
+    raise CamposObrigatoriosVaziosError(campos_vazios)
+
 
 @dataclass(frozen=True)
 class RegistroLote:
