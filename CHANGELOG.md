@@ -5,6 +5,17 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [0.2.0] - 2026-07-08
+
+### Adicionado
+
+- Função `valida_estrutura()` em `src/validacao.py` — verifica colunas da planilha sem interromper o fluxo.
+- Função `valida_campos_obrigatorios()` — valida `lote_id`, `produto`, `linha`, `turno`, `status` e `responsavel`.
+- Exceções `ErroValidacao` e `CamposObrigatoriosVaziosError`.
+- Dataclass `ResultadoEstrutura` com diagnóstico de colunas presentes/ausentes.
+- Testes unitários da Issue #1 em `tests/test_validacao.py` (`TestValidaEstrutura`, `TestValidaCamposObrigatorios`).
+- Documentação atualizada no `README.md`.
+
 ## [0.1.0] - 2026-07-08
 
 ### Adicionado
@@ -19,4 +30,5 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - Template de Pull Request em `.github/pull_request_template.md`.
 - Documentação de instalação e execução no `README.md`.
 
+[0.2.0]: https://github.com/org/conferencia-lotes-qualidade/releases/tag/v0.2.0
 [0.1.0]: https://github.com/org/conferencia-lotes-qualidade/releases/tag/v0.1.0
