@@ -1,2 +1,7 @@
 .env
-logs/execucao.log
+__pycache__/
+logs/
+*.log
+relatorio_execucao.json
+.venv/
+venv/
