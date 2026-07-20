@@ -1,0 +1,31 @@
+version: '3.9'
+
+services:
+  auditor-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auditor-acessos-bot
+    restart: unless-stopped
+    environment:
+      - MAESTRO_ENABLED=${MAESTRO_ENABLED:-true}
+      - VAULT_ENABLED=${VAULT_ENABLED:-true}
+      - MAESTRO_SERVER_URL=${MAESTRO_SERVER_URL}
+      - MAESTRO_API_KEY=${MAESTRO_API_KEY}
+      - DATA_POOL_NAME=${DATA_POOL_NAME:-FilaAuditoriaLotes}
+      - CREDENTIAL_LABEL=${CREDENTIAL_LABEL:-credencial_erp}
+      - INPUT_FOLDER=${INPUT_FOLDER:-dados_entrada}
+      - LOG_FILE=${LOG_FILE:-logs/execucao.log}
+    volumes:
+      - bot-logs:/app/logs
+      - ./dados_entrada:/app/dados_entrada:ro
+    networks:
+      - bot-network
+
+volumes:
+  bot-logs:
+    name: auditor-bot-logs
+
+networks:
+  bot-network:
+    name: auditor-bot-network
