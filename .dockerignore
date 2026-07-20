@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Environment (NUNCA incluir!)
+.env
+.env.local
+*.env
+
+# Logs
+logs/
+*.log
+relatorio_execucao.json
+
+# IDE
+.vscode/
+.idea/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Docs (opcional)
+docs/
+*.md

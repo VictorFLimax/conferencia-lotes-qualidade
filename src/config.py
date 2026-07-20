@@ -1,54 +1,17 @@
-"""Carregamento e gerenciamento de variáveis de ambiente."""
-
-from __future__ import annotations
-
 import os
-from dataclasses import dataclass
-from pathlib import Path
-
 from dotenv import load_dotenv
 
-RAIZ_PROJETO = Path(__file__).resolve().parent.parent
+load_dotenv()
 
-
-@dataclass(frozen=True)
 class Config:
-  """Configurações da aplicação carregadas a partir do ambiente."""
-
-  caminho_planilha_entrada: Path
-  caminho_saida_relatorio: Path
-  caminho_base_referencia: Path | None
-  log_level: str
-
-  @classmethod
-  def carregar(cls, env_path: Path | None = None) -> Config:
-    """
-    Carrega variáveis de ambiente a partir de um arquivo `.env`.
-
-    Args:
-      env_path: Caminho opcional para o arquivo `.env`.
-        Se não informado, busca `.env` na raiz do projeto.
-
-    Returns:
-      Instância imutável de `Config` com os valores resolvidos.
-    """
-    caminho_env = env_path or RAIZ_PROJETO / ".env"
-    load_dotenv(caminho_env)
-
-    base_ref = os.getenv("CAMINHO_BASE_REFERENCIA", "").strip()
-    return cls(
-      caminho_planilha_entrada=Path(
-        os.getenv(
-          "CAMINHO_PLANILHA_ENTRADA",
-          "data/samples/planilha_lotes.xlsx",
-        )
-      ),
-      caminho_saida_relatorio=Path(
-        os.getenv(
-          "CAMINHO_SAIDA_RELATORIO",
-          "data/output/divergencias.xlsx",
-        )
-      ),
-      caminho_base_referencia=Path(base_ref) if base_ref else None,
-      log_level=os.getenv("LOG_LEVEL", "INFO").upper(),
-    )
+    MAESTRO_ENABLED = os.getenv("MAESTRO_ENABLED", "false").lower() == "true"
+    VAULT_ENABLED = os.getenv("VAULT_ENABLED", "false").lower() == "true"
+    
+    MAESTRO_SERVER_URL = os.getenv("MAESTRO_SERVER_URL", "https://maestro.botcity.dev")
+    MAESTRO_API_KEY = os.getenv("MAESTRO_API_KEY", "")
+    
+    DATA_POOL_NAME = os.getenv("DATA_POOL_NAME", "FilaAuditoriaLotes")
+    CREDENTIAL_LABEL = os.getenv("CREDENTIAL_LABEL", "credencial_erp")
+    
+    INPUT_FOLDER = os.getenv("INPUT_FOLDER", "dados_entrada")
+    LOG_FILE = os.getenv("LOG_FILE", "logs/execucao.log")# config.py - Configurações da automação

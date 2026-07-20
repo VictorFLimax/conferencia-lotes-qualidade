@@ -1,39 +1,7 @@
-# Ambiente virtual
-venv/
-.venv/
-env/
-
-# Variáveis de ambiente
 .env
-
-# Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-*.egg-info/
-dist/
-build/
-.eggs/
-*.egg
-
-# Testes e cobertura
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-
-# Logs e saídas
 logs/
-data/output/
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Sistema operacional
-.DS_Store
-Thumbs.db
+*.log
+relatorio_execucao.json
+.venv/
+venv/
