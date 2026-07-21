@@ -11,11 +11,11 @@ from pathlib import Path
 
 from botcity.maestro import BotMaestroSDK, AlertType, ActivityStatus
 
-from src.config import Config
-from src.dispatcher import run_dispatcher
-from src.bot import process_item
-from src.relatorio import gerar_relatorio_divergencias
-from src.validacao import ResultadoValidacao, RegistroLote, Divergencia
+from .config import Config
+from .dispatcher import run_dispatcher
+from .bot import process_item
+from .relatorio import gerar_relatorio_divergencias
+from .validacao import ResultadoValidacao, RegistroLote, Divergencia
 
 os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
