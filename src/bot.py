@@ -1,9 +1,9 @@
 """Performer: Processa itens da fila usando a lógica de negócio original."""
 import logging
 from botcity.maestro import BotMaestroSDK, DataPoolItem, ActivityStatus, ErrorType
-from src.config import Config
-from src.base_referencia import BaseReferencia
-from src.validacao import ConferenciaLotes, registro_de_linha, CamposObrigatoriosVaziosError
+from .config import Config
+from .base_referencia import BaseReferencia
+from .validacao import ConferenciaLotes, registro_de_linha, CamposObrigatoriosVaziosError
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ def process_item(maestro: BotMaestroSDK, item: DataPoolItem, config: Config) -> 
 
     try:
         # 1. SEGURANÇA: Aqui você usaria o Vault se a BaseReferencia fosse um banco real
-        # creds = get_erp_credentials(maestro) 
+        # (Para este exercício, vamos manter a lógica original)
         
         # 2. DADOS: Converte o item do DataPool no seu RegistroLote original
         registro = registro_de_linha(item.fields)
