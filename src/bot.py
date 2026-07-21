@@ -1,46 +1,71 @@
-import time
+"""Performer: Processa itens da fila usando a lógica de negócio original."""
 import logging
 from botcity.maestro import BotMaestroSDK, DataPoolItem, ActivityStatus, ErrorType
 from src.config import Config
-from src.vault_client import get_erp_credentials
+from src.base_referencia import BaseReferencia
+from src.validacao import ConferenciaLotes, registro_de_linha, CamposObrigatoriosVaziosError
 
 logger = logging.getLogger(__name__)
 
-def process_item(maestro: BotMaestroSDK, item: DataPoolItem) -> bool:
-    logger.info(f"Processando item da fila: {item.fields.get('nome')}")
-    
-    cpf = item.fields.get("cpf", "").strip()
-    if not cpf:
-        logger.warning(f"ValidationError: CPF em branco para o usuário {item.fields.get('nome')}. Marcando como erro.")
+def process_item(maestro: BotMaestroSDK, item: DataPoolItem, config: Config) -> bool:
+    numero_lote = item.fields.get("numero_lote", "DESCONHECIDO")
+    logger.info(f"Iniciando validação do Lote: {numero_lote}")
+
+    try:
+        # 1. SEGURANÇA: Aqui você usaria o Vault se a BaseReferencia fosse um banco real
+        # creds = get_erp_credentials(maestro) 
+        
+        # 2. DADOS: Converte o item do DataPool no seu RegistroLote original
+        registro = registro_de_linha(item.fields)
+
+        # 3. LÓGICA DE NEGÓCIO ORIGINAL (Intacta!)
+        base = BaseReferencia(config)
+        conferencia = ConferenciaLotes(base)
+        resultado = conferencia.validar_registro(registro)
+
+        # 4. TRATAMENTO DO RESULTADO NO MAESTRO
+        if resultado.aprovado:
+            logger.info(f"Lote {numero_lote} aprovado.")
+            maestro.update_datapool_item(
+                pool_name=config.data_pool_name,
+                item_id=item.id,
+                status=ActivityStatus.SUCCESS,
+                fields={"resultado_validacao": "APROVADO"}
+            )
+            return True
+        else:
+            msgs = [f"[{d.regra}] {d.mensagem}" for d in resultado.divergencias]
+            erro_msg = " | ".join(msgs)
+            logger.warning(f"Lote {numero_lote} reprovado: {erro_msg}")
+            
+            maestro.update_datapool_item(
+                pool_name=config.data_pool_name,
+                item_id=item.id,
+                status=ActivityStatus.ERROR,
+                error_type=ErrorType.VALIDATION_ERROR,
+                error_message=erro_msg,
+                fields={"resultado_validacao": "REPROVADO"}
+            )
+            return False
+
+    except CamposObrigatoriosVaziosError as e:
+        logger.warning(f"ValidationError no Lote {numero_lote}: {e}")
         maestro.update_datapool_item(
-            pool_name=Config.DATA_POOL_NAME,
+            pool_name=config.data_pool_name,
             item_id=item.id,
             status=ActivityStatus.ERROR,
             error_type=ErrorType.VALIDATION_ERROR,
-            error_message="CPF está em branco."
+            error_message=str(e)
         )
         return False
-
-    try:
-        creds = get_erp_credentials(maestro)
-        logger.info(f"Simulando processamento no ERP para CPF: {cpf}")
-        time.sleep(1)
-        
-        maestro.update_datapool_item(
-            pool_name=Config.DATA_POOL_NAME,
-            item_id=item.id,
-            status=ActivityStatus.SUCCESS
-        )
-        logger.info(f"Item processado com sucesso: {item.fields.get('nome')}")
-        return True
         
     except Exception as e:
-        logger.error(f"Erro ao processar item {item.id}: {e}")
+        logger.error(f"AppError no Lote {numero_lote}: {e}", exc_info=True)
         maestro.update_datapool_item(
-            pool_name=Config.DATA_POOL_NAME,
+            pool_name=config.data_pool_name,
             item_id=item.id,
             status=ActivityStatus.ERROR,
             error_type=ErrorType.APP_ERROR,
-            error_message=str(e)
+            error_message=f"Falha na execução: {str(e)}"
         )
         return False
