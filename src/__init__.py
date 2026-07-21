@@ -1,1 +1,1 @@
-  """Pacote src - Auditor de Acessos BotCity v1.0"""
+"""Pacote src - Conferência de Lotes de Qualidade com BotCity Maestro."""
