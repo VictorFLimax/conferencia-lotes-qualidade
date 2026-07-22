@@ -6,6 +6,15 @@ O fluxo lê uma planilha Excel, alimenta uma fila (DataPool), valida cada lote c
 
 **Repositório:** [https://github.com/VictorFLimax/conferencia-lotes-qualidade](https://github.com/VictorFLimax/conferencia-lotes-qualidade)
 
+### Equipe
+
+| Integrante |
+|------------|
+| Victor |
+| André |
+| Gustavo |
+| Mouriem |
+
 ---
 
 ## Visão geral
@@ -319,5 +328,7 @@ Branches principais observadas no repositório: `main` / `master`, `develop`.
 Todo o código deste projeto está em:
 
 **https://github.com/VictorFLimax/conferencia-lotes-qualidade**
+
+Desenvolvido pela equipe: **Victor**, **André**, **Gustavo** e **Mouriem**.
 
 Para dúvidas, issues ou melhorias, abra uma issue ou pull request nesse repositório.
