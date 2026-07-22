@@ -1,108 +1,48 @@
-"""Ponto de entrada do bot de conferência de lotes com BotCity Maestro."""
-from __future__ import annotations
-import os
-import sys
-import json
+import asyncio
 import logging
-from dataclasses import dataclass
-from typing import Any
-from datetime import datetime
-from pathlib import Path
+import os
+from web_automation import preencher_lote
 
-from botcity.maestro import BotMaestroSDK, AlertType, ActivityStatus
-
-from .config import Config
-from .dispatcher import run_dispatcher
-from .bot import process_item
-from .relatorio import gerar_relatorio_divergencias
-from .validacao import ResultadoValidacao, RegistroLote, Divergencia
-
-os.makedirs("logs", exist_ok=True)
+# Configuração básica do logger para o orquestrador
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    handlers=[logging.FileHandler("logs/execucao.log", encoding='utf-8'), logging.StreamHandler(sys.stdout)]
+    format="%(asctime)s [%(levelname)s] [ORQUESTRADOR] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
 )
 logger = logging.getLogger(__name__)
 
-@dataclass
-class ExecutionResult:
-    SUCCESS = "SUCCESS"
-    FAILED = "FAILED"
-    status: str
-    message: str
-    detail: Any
+async def main():
+    logger.info("=" * 50)
+    logger.info("INICIANDO ORQUESTRADOR DE TAREFAS")
+    logger.info("=" * 50)
 
-def main() -> int:
-    config = Config.carregar()
-    
-    maestro = BotMaestroSDK()
-    if config.maestro_enabled:
-        maestro.login(server=config.maestro_server_url, login="", key=config.maestro_api_key)
-        maestro.log(message="Iniciando conferência de lotes v1.0", task_id=maestro.task_id)
-        logger.info("Conectado ao BotCity Maestro.")
+    url_alvo = os.getenv("TARGET_URL", "http://localhost:8000/lote-teste.html")
 
-    if not config.caminho_planilha_entrada.exists():
-        erro = f"Planilha de entrada não encontrada: {config.caminho_planilha_entrada}"
-        logger.error(erro)
-        if config.maestro_enabled:
-            maestro.alert(task_id=maestro.task_id, title="Falha Crítica", message=erro, alert_type=AlertType.ERROR)
-        return 1
-
-    summary = {"inicio": datetime.now().isoformat(), "total_processados": 0, "sucessos": 0, "erros": 0, "fim": None, "erro_critico": None}
-    resultados_validacao: list[ResultadoValidacao] = [] # Para o relatório final
+    # Dados que o orquestrador poderia ler de um banco de dados, API, fila (RabbitMQ/SQS) ou CSV
+    dados_para_processar = {
+        "numero_lote": "LOTE-2026-8842",
+        "produto_id": 2,          # Corresponde ao Produto B
+        "status": "concluido"     # 'pendente', 'processamento' ou 'concluido'
+    }
 
     try:
-        logger.info("Executando Dispatcher...")
-        run_dispatcher(maestro, config)
+        logger.info(f"Iniciando processamento para o lote: {dados_para_processar['numero_lote']}")
+        
+        # Executa a tarefa de automação
+        await preencher_lote(dados_lote=dados_para_processar, url=url_alvo)
+        
+        logger.info("Processo finalizado com sucesso pelo orquestrador.")
 
-        logger.info(f"Iniciando consumo da fila: {config.data_pool_name}")
-        while True:
-            item = maestro.get_datapool_item(pool_name=config.data_pool_name)
-            if not item:
-                logger.info("Fila vazia. Encerrando loop.")
-                break
+    except Exception as erro:
+        # Captura a exceção propagada pelo web_automation.py
+        logger.error(f"Falha crítica na execução da tarefa: {erro}")
+        # Aqui você poderia adicionar lógicas de retentativa (retry) ou envio de alertas/emails
 
-            summary["total_processados"] += 1
-            
-            # Recriamos o objeto ResultadoValidacao localmente para o relatório final
-            from src.base_referencia import BaseReferencia
-            from src.validacao import ConferenciaLotes, registro_de_linha
-            base = BaseReferencia(config)
-            conferencia = ConferenciaLotes(base)
-            resultado = conferencia.validar_registro(registro_de_linha(item.fields))
-            resultados_validacao.append(resultado)
-
-            sucesso = process_item(maestro, item, config)
-            if sucesso:
-                summary["sucessos"] += 1
-            else:
-                summary["erros"] += 1
-
-        if summary["erros"] > 0:
-            logger.info("Gerando relatório de divergências em Excel...")
-            caminho_saida = config.caminho_saida_relatorio
-            gerar_relatorio_divergencias(resultados_validacao, caminho_saida)
-            logger.info(f"Relatório de divergências gerado: {caminho_saida}")
-
-    except Exception as e:
-        logger.error(f"Erro crítico na execução do bot: {e}", exc_info=True)
-        summary["erro_critico"] = str(e)
     finally:
-        summary["fim"] = datetime.now().isoformat()
-        
-        report_path = "logs/relatorio_execucao.json"
-        with open(report_path, "w", encoding="utf-8") as f:
-            json.dump(summary, f, indent=4, ensure_ascii=False)
-        
-        if config.maestro_enabled:
-            maestro.post_artifact(task_id=maestro.task_id, artifact_name="Relatorio_Execucao.json", file_path=report_path)
-            
-            final_status = ExecutionResult.FAILED if summary["erro_critico"] else ExecutionResult.SUCCESS
-            result = ExecutionResult(status=final_status, message=f"Conferência concluída. Sucessos: {summary['sucessos']}, Erros: {summary['erros']}", detail=summary)
-            maestro.finish_task(task_id=maestro.task_id, status=result.status, message=result.message, detail=result.detail)
-
-    return 0 if summary["erro_critico"] is None else 1
+        logger.info("=" * 50)
+        logger.info("ORQUESTRADOR FINALIZADO")
+        logger.info("=" * 50)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # Inicia o loop de eventos assíncrono
+    asyncio.run(main())
