@@ -1,4 +1,5 @@
 import logging
+import re
 from playwright.async_api import async_playwright
 
 # Configuração básica do logger
@@ -24,25 +25,39 @@ async def preencher_lote(dados_lote: dict, url: str = "http://localhost:8000/lot
             logger.info(f"🌐 [Automação] Acessando: {url}")
             await page.goto(url)
 
-            # Preenchimento dos campos usando os dados recebidos do orquestrador
+            # =========================================================
+            # REFATORAÇÃO: USO DE LOCATORS SEMÂNTICOS
+            # =========================================================
+
+            # Substituído '#lote' por get_by_label
             logger.info(f"[Automação] Inserindo Lote: {dados_lote['numero_lote']}")
-            await page.fill("#lote", dados_lote["numero_lote"])
+            await page.get_by_label(re.compile("Número do Lote")).fill(dados_lote["numero_lote"])
 
+            # Substituído '#produto' por get_by_label
             logger.info(f"[Automação] Selecionando Produto ID: {dados_lote['produto_id']}")
-            await page.select_option("#produto", str(dados_lote["produto_id"]))
+            await page.get_by_label(re.compile("Produto")).select_option(str(dados_lote["produto_id"]))
 
+            # Mapeamento e substituição do seletor CSS do Radio Button por get_by_label
             logger.info(f"[Automação] Definindo Status: {dados_lote['status']}")
-            await page.check(f'input[name="status"][value="{dados_lote["status"]}"]')
+            status_map = {
+                "pendente": "Pendente",
+                "processamento": "Em Processamento",
+                "concluido": "Concluído"
+            }
+            status_label = status_map.get(dados_lote["status"].lower(), "Pendente")
+            await page.get_by_label(status_label, exact=True).check()
 
+            # Substituído 'button[type="submit"]' por get_by_role
             logger.info("[Automação] Enviando formulário...")
-            await page.click('button[type="submit"]')
+            await page.get_by_role("button", name="Processar Lote").click()
 
-            # Espera ativa pela confirmação
+            # Substituído espera por CSS '#mensagemSucesso.show' por get_by_text
             logger.info("[Automação] Aguardando confirmação do sistema...")
+            mensagem_sucesso = page.get_by_text("Lote processado com sucesso.")
+            await mensagem_sucesso.wait_for(state="visible", timeout=5000)
             
-            # Adicionado um timeout de 5 segundos. Se não aparecer, lança exceção.
-            await page.wait_for_selector("#mensagemSucesso.show", state="visible", timeout=5000)
-            
+            # =========================================================
+
             logger.info("[Automação] Lote cadastrado e verificado com sucesso!")
 
             # Snapshot de Sucesso
