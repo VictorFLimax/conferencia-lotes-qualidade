@@ -1,2 +1,3 @@
 python-dotenv
 botcity-maestro-sdk
+python-json-logger
