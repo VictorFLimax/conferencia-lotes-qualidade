@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def preencher_lote(dados_lote: dict, url: str = "http://localhost:8000/lote-teste.html"):
     """
-    Automação para preencher o formulário de cadastro de lote usando Selenium e IDs simples.
+    Automação para preencher o formulário de cadastro de lote usando Selenium.
     """
     logger.info("[Automação] Iniciando o Selenium WebDriver...")
     
@@ -26,46 +26,38 @@ def preencher_lote(dados_lote: dict, url: str = "http://localhost:8000/lote-test
         logger.info(f"🌐 [Automação] Acessando: {url}")
         driver.get(url)
 
-        # 1. Campo 'Número do Lote'
+        # 1. Campo 'Número do Lote' (id="lote")
         logger.info(f"[Automação] Inserindo Lote: {dados_lote['numero_lote']}")
-        campo_lote = wait.until(EC.element_to_be_clickable((By.ID, "lote"))) # <-- Altere 'lote' se necessário
+        campo_lote = wait.until(EC.element_to_be_clickable((By.ID, "lote")))
         campo_lote.clear()
         campo_lote.send_keys(dados_lote["numero_lote"])
 
-        # 2. Select 'Produto'
+        # 2. Select 'Produto' (id="produto")
         logger.info(f"[Automação] Selecionando Produto ID: {dados_lote['produto_id']}")
-        campo_produto = driver.find_element(By.ID, "produto") # <-- Altere 'produto' se necessário
+        campo_produto = driver.find_element(By.ID, "produto")
         select = Select(campo_produto)
         select.select_by_value(str(dados_lote["produto_id"]))
 
-        # 3. Radio Button
+        # 3. Radio Button por valor (name="status" e value="...")
         logger.info(f"[Automação] Definindo Status: {dados_lote['status']}")
-        # Mapeia a chave dos dados para o ID exato do radio no HTML
-        status_id_map = {
-            "pendente": "status_pendente",       # <-- Altere o ID do HTML
-            "processamento": "status_processando", # <-- Altere o ID do HTML
-            "concluido": "status_concluido"     # <-- Altere o ID do HTML
-        }
-        id_radio = status_id_map.get(dados_lote["status"].lower(), "status_pendente")
-        radio_button = driver.find_element(By.ID, id_radio)
+        status_valor = dados_lote["status"].lower() # ex: 'pendente', 'processamento', 'concluido'
+        radio_button = driver.find_element(By.CSS_SELECTOR, f"input[name='status'][value='{status_valor}']")
         if not radio_button.is_selected():
             radio_button.click()
 
-        # 4. Botão de Envio
+        # 4. Botão de Envio (button[type='submit'])
         logger.info("[Automação] Enviando formulário...")
         btn_submit = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")) # Ou use (By.ID, "btn-processar")
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']"))
         )
         btn_submit.click()
 
-        # 5. Aguardar mensagem de sucesso
+        # 5. Aguardar mensagem de sucesso ficar visível (id="mensagemSucesso" com classe ".show")
         logger.info("[Automação] Aguardando confirmação do sistema...")
         wait.until(
-            EC.visibility_of_element_located((By.ID, "mensagemSucesso")) # <-- Altere o ID do elemento da mensagem
+            EC.visibility_of_element_located((By.CSS_SELECTOR, "#mensagemSucesso.show"))
         )
         
-        # =========================================================
-
         logger.info("[Automação] Lote cadastrado e verificado com sucesso!")
 
         # Snapshot de Sucesso
