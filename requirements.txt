@@ -1,3 +1,6 @@
 python-dotenv
 botcity-maestro-sdk
 python-json-logger
+selenium
+webdriver-manager
+pytest
