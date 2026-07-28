@@ -4,3 +4,5 @@ python-json-logger
 selenium
 webdriver-manager
 pytest
+pandas
+playwright
