@@ -1,0 +1,14 @@
+[
+    {
+        "numero_lote": "1001",
+        "produto": "10",
+        "produto_id": 10,
+        "status": "Ativo"
+    },
+    {
+        "numero_lote": "1002",
+        "produto": "20",
+        "produto_id": 20,
+        "status": "Pendente"
+    }
+]
