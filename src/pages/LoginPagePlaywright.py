@@ -7,9 +7,9 @@ class LoginPage:
         self.page = page
 
         # Mapeamento dos elementos (utilizando locators)
-        self.usuario_input = page.locator("#user-name")
-        self.senha_input = page.locator("#password")
-        self.login_button = page.locator("#login-button")
+        self.usuario_input = page.get_by_label("Usuario ou E-mail")
+        self.senha_input = page.get_by_label("Senha")
+        self.login_button = page.get_by_role("button", name="Entrar")
 
     def fazer_login(self, usuario: str, senha: str):
         # O Playwright já aguarda o elemento estar visível e interativo automaticamente

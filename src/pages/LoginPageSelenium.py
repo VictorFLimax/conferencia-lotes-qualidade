@@ -10,9 +10,9 @@ class LoginPage:
         self.wait = WebDriverWait(driver, 10)
 
         # Mapeamento dos elementos (Mapeados como atributos da instância)
-        self.usuario_input = (By.ID, "user-name")
-        self.senha_input = (By.ID, "password")
-        self.login_button = (By.ID, "login-button")
+        self.usuario_input = (By.ID, "uuario")
+        self.senha_input = (By.ID, "senha")
+        self.login_button = (By.CSS_SELECTOR, "button.btn-submit")
 
     def fazer_login(self, usuario, senha):
         # Aguarda o campo de usuário ficar visível
