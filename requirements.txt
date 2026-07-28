@@ -1,3 +1,7 @@
 python-dotenv
 botcity-maestro-sdk
 python-json-logger
+pytest
+pytest-asyncio
+playwright
+pandas
