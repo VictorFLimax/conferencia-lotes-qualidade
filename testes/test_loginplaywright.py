@@ -6,7 +6,7 @@ Pré-requisitos:
     playwright install chromium
     python -m http.server 8000   (na pasta dos arquivos .html)
 """
-from src.pages.login_page_playwright import LoginPagePlaywright
+from src.pages.LoginPagePlaywright import LoginPagePlaywright
 
 
 def test_login_com_dados_validos_mostra_sucesso(playwright_page, login_url):
