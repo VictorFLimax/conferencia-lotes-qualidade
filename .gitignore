@@ -5,3 +5,5 @@ logs/
 relatorio_execucao.json
 .venv/
 venv/
+.png
+.jpg
