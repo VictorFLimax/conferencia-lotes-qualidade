@@ -1,9 +1,13 @@
 python-dotenv
 botcity-maestro-sdk
 python-json-logger
-pytest
-pytest-asyncio
-playwright
 pandas
+
+# Automação web
 selenium
+webdriver-manager
+playwright
+
+
+pytest
 pytest-playwright
