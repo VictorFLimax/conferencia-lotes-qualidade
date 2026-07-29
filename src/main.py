@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 from web_automation import preencher_lote
@@ -11,7 +10,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-async def main():
+def main():
     logger.info("=" * 50)
     logger.info("INICIANDO ORQUESTRADOR DE TAREFAS")
     logger.info("=" * 50)
@@ -29,7 +28,7 @@ async def main():
         logger.info(f"Iniciando processamento para o lote: {dados_para_processar['numero_lote']}")
         
         # Executa a tarefa de automação
-        await preencher_lote(dados_lote=dados_para_processar, url=url_alvo)
+        preencher_lote(dados_lote=dados_para_processar, url=url_alvo)
         
         logger.info("Processo finalizado com sucesso pelo orquestrador.")
 
@@ -44,5 +43,4 @@ async def main():
         logger.info("=" * 50)
 
 if __name__ == "__main__":
-    # Inicia o loop de eventos assíncrono
-    asyncio.run(main())
+    main()
