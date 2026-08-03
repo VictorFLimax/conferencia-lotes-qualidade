@@ -1,28 +1,26 @@
+"""Page Object — Login (Playwright sync)."""
+from __future__ import annotations
+
+import logging
+
 from playwright.sync_api import Page
+
+logger = logging.getLogger(__name__)
 
 
 class LoginPage:
-
     def __init__(self, page: Page):
         self.page = page
+        self.usuario_input = page.locator("#usuario")
+        self.senha_input = page.locator("#senha")
+        self.login_button = page.locator("button.btn-submit")
 
-        # Mapeamento dos elementos (utilizando locators)
-        self.usuario_input = page.get_by_label("Usuario ou E-mail")
-        self.senha_input = page.get_by_label("Senha")
-        self.login_button = page.get_by_role("button", name="Entrar")
-
-    def fazer_login(self, usuario: str, senha: str):
-        # O Playwright já aguarda o elemento estar visível e interativo automaticamente
+    def fazer_login(self, usuario: str, senha: str) -> None:
+        logger.info("[Playwright] Preenchendo credenciais de login...")
         url_inicial = self.page.url
-
-        # Preenche o usuário (fill limpa o campo antes de digitar)
         self.usuario_input.fill(usuario)
-
-        # Preenche a senha
         self.senha_input.fill(senha)
-
-        # Clica no botão de login
         self.login_button.click()
-
-        # Aguarda a URL mudar após o login
-        self.page.wait_for_url(lambda url: url != url_inicial)
+        # login.html redireciona para lote-teste.html após ~1.2s
+        self.page.wait_for_url(lambda url: url != url_inicial, timeout=10_000)
+        logger.info("[Playwright] Login concluído.")

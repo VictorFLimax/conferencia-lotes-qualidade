@@ -1,8 +1,6 @@
 # Conferência de Lotes — Qualidade
 
-Bot de automação em Python para **conferência e auditoria de lotes de qualidade**, integrado ao [BotCity Maestro](https://botcity.dev/).
-
-O fluxo lê uma planilha Excel, alimenta uma fila (DataPool), valida cada lote contra regras de negócio e gera relatórios de divergências e de execução.
+Bot de automação em Python para **conferência e auditoria de lotes de qualidade**, integrado ao [BotCity Maestro](https://botcity.dev/), com automação web opcional via **Playwright** ou **Selenium**.
 
 **Repositório:** [https://github.com/VictorFLimax/conferencia-lotes-qualidade](https://github.com/VictorFLimax/conferencia-lotes-qualidade)
 
@@ -19,18 +17,17 @@ O fluxo lê uma planilha Excel, alimenta uma fila (DataPool), valida cada lote c
 
 ## Visão geral
 
-Este projeto automatiza a conferência de lotes industriais/qualidade: compara dados de entrada com uma base de referência, aplica regras de negócio (RN01–RN07) e orquestra tudo no Maestro no padrão **Dispatcher → DataPool → Performer**.
+O bot orquestra no padrão **Dispatcher → DataPool → Performer** e, se habilitado, preenche o formulário web local (`html/login(1).html` → `lote-teste.html`).
 
 ### O que o bot faz
 
-1. Lê a planilha de entrada em `dados_entrada/`
-2. Envia cada linha para o DataPool do Maestro (**Dispatcher**)
+1. Lê a planilha em `dados_entrada/` (via `INPUT_FILE`)
+2. (Opcional) Envia linhas ao DataPool do Maestro (**Dispatcher**)
 3. Consome a fila item a item (**Performer**)
-4. Valida o lote na base de referência com as regras RN01–RN07
-5. Atualiza o status de cada item (`SUCCESS` / `ERROR`)
-6. Gera relatório Excel de divergências (quando houver reprovações)
-7. Grava resumo JSON da execução e publica artefato no Maestro
-8. Finaliza a task com status e métricas
+4. Valida cada lote com as regras RN01–RN07
+5. Marca o item no DataPool (`report_done` / `report_error`)
+6. (Opcional) Abre o HTML e preenche o formulário com **Playwright** ou **Selenium**
+7. Gera `logs/resumo_execucao.json`, publica artefato e finaliza a task no Maestro
 
 ---
 
@@ -44,15 +41,16 @@ Este projeto automatiza a conferência de lotes industriais/qualidade: compara d
                                                           │
                                                           ▼
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│ Relatório Excel │◀────│    Performer     │◀────│  Consumo fila   │
-│ + JSON execução │     │  (valida lotes)  │     │                 │
+│ Resumo JSON     │◀────│    Performer     │◀────│  Consumo fila   │
+│ + artefato      │     │  (valida lotes)  │     │                 │
 └─────────────────┘     └────────┬─────────┘     └─────────────────┘
                                  │
-                                 ▼
-                        ┌──────────────────┐
-                        │ Base Referência  │
-                        │ + Regras RN01-07 │
-                        └──────────────────┘
+                    ┌────────────┴────────────┐
+                    ▼                         ▼
+           ┌────────────────┐      ┌─────────────────────┐
+           │ Base Referência│      │ Automação web       │
+           │ + RN01–RN07    │      │ Playwright|Selenium │
+           └────────────────┘      └─────────────────────┘
 ```
 
 ---
@@ -61,65 +59,56 @@ Este projeto automatiza a conferência de lotes industriais/qualidade: compara d
 
 ```
 conferencia-lotes-qualidade/
-├── src/
-│   ├── __init__.py          # Pacote do bot
-│   ├── main.py              # Ponto de entrada — Maestro, fila e relatório
-│   ├── config.py            # Variáveis de ambiente (.env)
-│   ├── dispatcher.py        # Lê Excel e popula o DataPool
-│   ├── bot.py               # Performer — processa cada item da fila
-│   ├── validacao.py         # Regras de negócio (RN01–RN07) e modelos
-│   ├── base_referencia.py   # Consulta à base de referência (mock)
-│   ├── relatorio.py         # Geração do Excel de divergências
-│   ├── vault_client.py      # Credenciais via Vault do Maestro
-│   └── logger.py            # Logger estruturado em JSON
-├── dados_entrada/           # Planilhas de entrada (.xlsx)
-├── data/samples/            # Amostras / dados de exemplo
-├── logs/                    # Logs, JSON e Excel de saída
-├── .github/
-│   ├── workflows/ci.yml     # CI (Python 3.11)
-│   └── pull_request_template.md
-├── Dockerfile
-├── docker-compose.yml
+├── bot.py                      # Entry point BotCity Runner / Easy Deploy
+├── pack_botcity.py             # Gera ZIP para subir no Maestro
 ├── requirements.txt
 ├── .env.example
-└── README.md
+├── README.md
+├── html/
+│   ├── login(1).html           # Tela de login (ambiente de teste)
+│   ├── login.html
+│   └── lote-teste.html         # Formulário de lote
+├── src/
+│   ├── main.py                 # Fluxo Maestro + validação + web
+│   ├── config.py               # Único carregamento do .env
+│   ├── dispatcher.py           # Popular o DataPool
+│   ├── bot.py                  # Performer (processa 1 item)
+│   ├── validacao.py            # RN01–RN07
+│   ├── base_referencia.py      # Base de referência
+│   ├── vault_client.py         # Credenciais Vault
+│   ├── relatorio.py
+│   ├── pages/                  # Page Objects
+│   │   ├── LoginPagePlaywright.py
+│   │   ├── LoginPageSelenium.py
+│   │   ├── FormPagePlaywright.py
+│   │   └── FormPageSelenium.py
+│   └── web/                    # Orquestrador web
+│       ├── orchestrator.py     # Escolhe playwright | selenium
+│       ├── playwright_runner.py
+│       └── selenium_runner.py
+├── dados_entrada/              # Planilha (NÃO versionar *.xlsx)
+├── logs/                       # Logs e resumo
+└── dist/                       # ZIP gerado para BotCity
 ```
-
----
-
-## Regras de negócio
-
-| Código | Descrição | Status |
-|--------|-----------|--------|
-| **RN01** | Lote deve existir na base de referência | Implementada |
-| **RN02** | Código do produto deve corresponder à base | Implementada |
-| **RN03** | Quantidade deve ser igual à da base | Implementada |
-| **RN04** | Datas de fabricação/validade válidas | Preparada (stub) |
-| **RN05** | Status permitido: `APROVADO`, `REPROVADO` ou `EM_ANALISE` | Implementada |
-| **RN06** | Lote não pode estar vencido | Preparada (stub) |
-| **RN07** | Campos obrigatórios preenchidos | Preparada (stub) |
-
-Há também validação auxiliar de **estrutura da planilha** e **campos obrigatórios** (`valida_estrutura`, `valida_campos_obrigatorios`) para colunas como `lote_id`, `produto`, `linha`, `turno`, `status`, `responsavel`.
 
 ---
 
 ## Pré-requisitos
 
-- **Python** 3.11+
-- Conta e **API Key** no BotCity Maestro (quando `MAESTRO_ENABLED=true`)
-- DataPool criado no Maestro (ex.: `FilaAuditoriaLotes` / `FilaConferenciaLotes`)
-- Planilha de entrada no formato esperado (ver seção abaixo)
+- Python 3.11+
+- Conta BotCity Maestro + DataPool criado
+- Planilha em `dados_entrada/`
+- Para web com Playwright: `python -m playwright install chromium`
+- Para web com Selenium: Chrome instalado (usa `webdriver-manager`)
 
 ---
 
 ## Instalação
 
 ```bash
-# Clonar o repositório
 git clone https://github.com/VictorFLimax/conferencia-lotes-qualidade.git
 cd conferencia-lotes-qualidade
 
-# Criar ambiente virtual (recomendado)
 python -m venv .venv
 
 # Windows (PowerShell)
@@ -128,184 +117,223 @@ python -m venv .venv
 # Linux / macOS
 source .venv/bin/activate
 
-# Instalar dependências
 pip install -r requirements.txt
+python -m playwright install chromium
 ```
 
-### Dependências (`requirements.txt`)
+### Dependências principais
 
 | Pacote | Uso |
 |--------|-----|
-| `python-dotenv` | Carregar variáveis do `.env` |
-| `botcity-maestro-sdk` | Maestro, DataPool, alertas, artefatos |
-| `python-json-logger` | Logs estruturados em JSON |
-
-O código também utiliza **pandas** e **openpyxl** para ler/escrever Excel (dispatcher e relatório). Instale-os se ainda não estiverem no ambiente:
-
-```bash
-pip install pandas openpyxl
-```
+| `botcity-maestro-sdk` | Maestro, DataPool, artefatos, finish task |
+| `python-dotenv` | `.env` |
+| `pandas` / `openpyxl` | Planilha |
+| `playwright` | Automação web (opção A) |
+| `selenium` + `webdriver-manager` | Automação web (opção B) |
+| `pytest` | Testes |
 
 ---
 
-## Configuração
-
-1. Copie o exemplo de ambiente:
-
-```bash
-cp .env.example .env
-```
-
-No Windows (PowerShell):
+## Configuração (`.env`)
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-2. Preencha o `.env`:
+| Variável | Descrição | Exemplo |
+|----------|-----------|---------|
+| `MAESTRO_ENABLED` | Liga Maestro | `true` |
+| `MAESTRO_SERVER_URL` | URL do workspace | `https://lgcmd.botcity.dev` |
+| `MAESTRO_LOGIN` | Login (Developer Environment) — local | `lg-cmdi` |
+| `MAESTRO_API_KEY` | Key do Maestro | *(sua key)* |
+| `DATA_POOL_NAME` | Label do DataPool | `FilaConferenciaLotes_Eq_AGMV` |
+| `INPUT_FILE` | Planilha de entrada | `dados_entrada/inspecao_lotes_dia.xlsx` |
+| `LOG_FILE` | Arquivo de log | `logs/execucao.log` |
+| `VAULT_ENABLED` | Usa Vault | `false` |
+| `CREDENTIAL_LABEL` | Label no Vault | `credencial_erp` |
+| `RUN_DISPATCHER` | Popular a fila ao iniciar | `false` |
+| `WEB_AUTOMATION_ENABLED` | Liga automação web | `true` |
+| `WEB_AUTOMATION_DRIVER` | **`playwright`** ou **`selenium`** | `playwright` |
+| `WEB_AUTOMATION_URL` | URL/arquivo HTML | `file:///.../html/login%281%29.html` |
+| `PLAYWRIGHT_HEADLESS` | Headless Playwright | `false` |
+| `SELENIUM_HEADLESS` | Headless Selenium | `false` |
+| `WEB_USUARIO` / `WEB_SENHA` | Login do HTML (se Vault off) | `usuario.teste` |
 
-| Variável | Descrição | Exemplo / padrão |
-|----------|-----------|------------------|
-| `MAESTRO_ENABLED` | Liga integração com o Maestro | `true` |
-| `VAULT_ENABLED` | Usa Vault para credenciais | `true` |
-| `MAESTRO_SERVER_URL` | URL do servidor Maestro | `https://maestro.botcity.dev` |
-| `MAESTRO_API_KEY` | Chave de API | *(sua key)* |
-| `DATA_POOL_NAME` | Nome da fila no Maestro | `FilaAuditoriaLotes_Eq_AGMV` |
-| `CREDENTIAL_LABEL` | Label da credencial no Vault | `credencial_erp_Eq_AGMV` |
-| `INPUT_FOLDER` | Pasta de entrada (Compose) | `dados_entrada` |
-| `LOG_FILE` | Caminho do log | `logs/execucao.log` |
-| `CAMINHO_PLANILHA_ENTRADA` | Planilha de entrada | `dados_entrada/planilha_lotes.xlsx` |
-| `CAMINHO_SAIDA_RELATORIO` | Excel de divergências | `logs/divergencias.xlsx` |
-| `CAMINHO_BASE_REFERENCIA` | Base externa (opcional) | *(vazio = mock)* |
-| `LOG_LEVEL` | Nível de log | `INFO` |
-| `EXECUTION_ID` / `BOT_ID` | Contexto do logger JSON | `local-dev` / `bot-test` |
+> **Nunca** versione o `.env` com segredos (já está no `.gitignore`).
 
-> **Nunca** versione o arquivo `.env` com credenciais reais (já está no `.gitignore`).
+### Escolher Playwright ou Selenium
+
+```env
+WEB_AUTOMATION_ENABLED=true
+WEB_AUTOMATION_DRIVER=playwright   # ou: selenium
+WEB_AUTOMATION_URL=file:///C:/Users/Turma01/Downloads/conferencia-lotes-qualidade/html/login%281%29.html
+```
+
+O orquestrador em `src/web/orchestrator.py` lê `WEB_AUTOMATION_DRIVER` e chama o runner correspondente.
 
 ---
 
-## Formato da planilha de entrada
+## Planilha de entrada
 
-Coloque o arquivo Excel em `dados_entrada/` (padrão: `planilha_lotes.xlsx`, ou o caminho de `CAMINHO_PLANILHA_ENTRADA`).
+Arquivo padrão: `dados_entrada/inspecao_lotes_dia.xlsx`
 
-Colunas usadas pelo **Dispatcher** ao popular a fila:
+| Aba | Função |
+|-----|--------|
+| `Inspecao_14_06_2026` | Dados enviados ao DataPool |
+| `Base_Referencia` | Lotes oficiais |
+| `Formulario_Analise` | Análise manual (auxiliar) |
 
-| Coluna | Descrição |
-|--------|-----------|
-| `numero_lote` | Identificador do lote |
-| `codigo_produto` | Código do produto |
-| `quantidade` | Quantidade do lote |
-| `data_fabricacao` | Data de fabricação |
-| `data_validade` | Data de validade |
-| `status` | Status do lote |
+**Aba de inspeção** (linhas 1–2 = título/metadados; linha 3 = cabeçalho):
 
-Cada item também recebe `linha_original` (número da linha na planilha).
+| Campo | Obrigatório |
+|-------|-------------|
+| `lote_id` | sim |
+| `produto` | sim |
+| `linha` | sim |
+| `turno` | sim |
+| `status` | sim |
+| `responsavel` | sim |
+| `data` | sim |
+| `observacao` | não (obrigatória se REPROVADO/NOK) |
+
+Exemplo de `lote_id`: `LG-2026-00101`.
+
+---
+
+## Regras de negócio
+
+| Código | O que valida |
+|--------|--------------|
+| RN01 | Lote existe na base de referência |
+| RN02 | Produto corresponde à base |
+| RN03 | Quantidade / consistência com a base |
+| RN04 | Datas (stub / em evolução) |
+| RN05 | Status permitido |
+| RN06 | Lote não vencido (stub) |
+| RN07 | Campos obrigatórios |
+
+Há também validação de estrutura da planilha (`lote_id`, `produto`, `linha`, `turno`, `status`, `responsavel`).
 
 ---
 
 ## Como executar
 
-### Localmente
+### Local — fluxo completo
 
-```bash
-python -m src.main
+```powershell
+# Com Maestro + (opcional) popular fila
+$env:RUN_DISPATCHER = "true"
+python bot.py
+
+# Só performer / web (sem popular fila)
+python bot.py
 ```
 
-### Com Docker Compose
+### Local — só HTML (sem Maestro)
 
-```bash
-# Configure o .env antes
-docker compose up --build
+```powershell
+$env:PYTHONPATH = (Get-Location).Path
+$env:MAESTRO_ENABLED = "false"
+python bot.py
 ```
 
-O Compose monta `dados_entrada/` (somente leitura) e persiste logs no volume `auditor-bot-logs`.
+Fluxo web esperado:
 
-### Somente Docker
+1. Abre `login(1).html`
+2. Preenche usuário/senha → **Entrar**
+3. Redireciona para `lote-teste.html`
+4. Preenche lote, produto e status → **Processar Lote**
+5. Valida mensagem de sucesso e grava snapshot em `logs/`
 
-```bash
-docker build -t conferencia-lotes .
-docker run --env-file .env -v ./dados_entrada:/app/dados_entrada:ro conferencia-lotes
+### Popular só o DataPool
+
+```powershell
+python -m src.dispatcher
 ```
 
 ---
 
-## Fluxo de execução
+## Subir no BotCity Maestro
 
-1. **Config** — `Config.carregar()` lê o `.env`
-2. **Login Maestro** — autentica se `MAESTRO_ENABLED=true`
-3. **Dispatcher** — lê o Excel e cria itens no DataPool
-4. **Loop Performer** — para cada item:
-   - Converte `fields` → `RegistroLote`
-   - Consulta `BaseReferencia`
-   - Aplica RN01–RN07
-   - Atualiza o item no DataPool (`APROVADO` / `REPROVADO` ou erro)
-5. **Relatório** — se houver erros, gera `logs/divergencias.xlsx`
-6. **Finalização** — grava `logs/relatorio_execucao.json`, publica artefato e finaliza a task
+O Runner exige o arquivo **`bot.py`** na raiz do ZIP ([documentação](https://documentation.botcity.dev/tutorials/custom-automations/python-custom/)).
 
-Códigos de saída:
+1. Gerar o pacote:
 
-- `0` — execução sem erro crítico
-- `1` — planilha ausente ou erro crítico
+```powershell
+python pack_botcity.py
+```
+
+Saída: `dist/conferencia-lotes-botcity.zip` (sem `.env`, sem `.venv`, sem planilha).
+
+2. No Maestro: **Easy Deploy** → enviar o ZIP → tecnologia **Python**.
+3. No Runner: criar `.env` (ou variáveis de ambiente) com as mesmas chaves.
+4. Entry point: `bot.py`.
+
+No Runner, a autenticação usa `BotMaestroSDK.from_sys_args()`. Localmente, usa `MAESTRO_SERVER_URL` + `MAESTRO_LOGIN` + `MAESTRO_API_KEY`.
 
 ---
 
-## Saídas geradas
+## Fluxo de execução (detalhe)
+
+1. `Config.carregar()` lê o `.env`
+2. Conecta no Maestro (Runner ou login local)
+3. Se `VAULT_ENABLED=true`, busca credencial
+4. Se `RUN_DISPATCHER=true`, popula o DataPool a partir de `INPUT_FILE`
+5. Consome `DATA_POOL_NAME` e valida cada item
+6. Se `WEB_AUTOMATION_ENABLED=true`, executa Playwright ou Selenium
+7. Grava `logs/resumo_execucao.json`, publica artefato e finaliza a task
+
+Códigos de saída: `0` sucesso · `1` erro crítico.
+
+---
+
+## Saídas
 
 | Arquivo | Conteúdo |
 |---------|----------|
-| `logs/execucao.log` | Log detalhado da execução |
-| `logs/relatorio_execucao.json` | Resumo (início/fim, sucessos, erros) |
-| `logs/divergencias.xlsx` | Divergências por lote/regra (se houver reprovações) |
+| `logs/execucao.log` | Log da execução |
+| `logs/resumo_execucao.json` | Resumo (aprovados, reprovados, web) |
+| `logs/screenshots/*.png` | Screenshots de login / sucesso / erro |
 
-No Maestro, o JSON também é enviado como artefato `Relatorio_Execucao.json`.
+### Result Files (Maestro Artifacts)
 
-Colunas do Excel de divergências: `numero_lote`, `codigo_produto`, `regra`, `mensagem`, `valor_esperado`, `valor_encontrado`.
+Com `SCREENSHOT_ENABLED=true` e `UPLOAD_ARTIFACTS=true`, ao rodar **via Runner** (com `task_id`), o bot envia:
 
----
+- `resumo_execucao.json`
+- cada PNG de `logs/screenshots/`
 
-## Base de referência
+via `maestro.post_artifact(...)` — visíveis em **Result Files** no Orchestrator:
 
-Por padrão, `BaseReferencia` usa um **mock em memória**:
+https://documentation.botcity.dev/maestro/maestro-sdk/result-files/
 
-| Lote | Produto | Quantidade | Status |
-|------|---------|------------|--------|
-| `LOTE-001` | `PROD-A` | 100.0 | `APROVADO` |
-| `LOTE-002` | `PROD-B` | 250.0 | `APROVADO` |
+```env
+SCREENSHOT_ENABLED=true
+UPLOAD_ARTIFACTS=true
+```
 
-Se `CAMINHO_BASE_REFERENCIA` for definido, a consulta via arquivo está prevista, mas ainda **não implementada** (`NotImplementedError`).
+Em execução local sem `task_id`, os PNGs ficam só em disco.
 
 ---
 
 ## Segurança e Vault
 
-O módulo `vault_client.py` obtém credenciais do Vault do Maestro quando `VAULT_ENABLED=true`. Com Vault desligado, usa credenciais fictícias para teste local.
+Com `VAULT_ENABLED=true`, `vault_client.py` busca a credencial `CREDENTIAL_LABEL` no Maestro (chaves `usuario`/`senha` ou `login`/`password`). Com Vault desligado, usa `WEB_USUARIO` / `WEB_SENHA`.
 
-Boas práticas do projeto:
-
-- Usuário **não-root** no container Docker
-- `.env` e credenciais no `.gitignore` / `.dockerignore`
-- Logs devem expor apenas o usuário — **nunca a senha**
+- `.env` fora do Git e do ZIP
+- Logs nunca devem imprimir a senha
 
 ---
 
-## Logging
+## Docker
 
-- Em `main.py`: log em arquivo (`logs/execucao.log`) + console
-- Em `logger.py`: logger estruturado JSON (`python-json-logger`) com `execution_id` e `bot_id`
+```bash
+docker compose up --build
+# ou
+docker build -t conferencia-lotes .
+docker run --env-file .env -v ./dados_entrada:/app/dados_entrada:ro conferencia-lotes
+```
 
----
-
-## CI / Contribuição
-
-O workflow GitHub Actions (`.github/workflows/ci.yml`) roda em push/PR para `master` e `develop`:
-
-1. Checkout do código  
-2. Setup Python 3.11  
-3. Instalação de `requirements.txt`
-
-Use o template de Pull Request (`.github/pull_request_template.md`). Checklist inclui tipagem, regras RN01–RN07, testes, cobertura (meta **80%** em `src/`) e atualização do README quando necessário.
-
-Branches principais observadas no repositório: `main` / `master`, `develop`.
+O container executa `python bot.py`.
 
 ---
 
@@ -313,22 +341,17 @@ Branches principais observadas no repositório: `main` / `master`, `develop`.
 
 | Tecnologia | Uso |
 |------------|-----|
-| Python 3.11 | Runtime |
-| BotCity Maestro SDK | Orquestração, DataPool, alertas, artefatos |
-| pandas / openpyxl | Planilhas de entrada e relatório |
+| Python 3.11+ | Runtime |
+| BotCity Maestro SDK | DataPool, tasks, artefatos |
+| Playwright / Selenium | Automação web (escolha via `.env`) |
+| pandas / openpyxl | Planilhas |
 | python-dotenv | Configuração |
-| python-json-logger | Logs JSON |
-| Docker / Compose | Empacotamento e execução |
-| GitHub Actions | CI |
+| Docker / GitHub Actions | Empacotamento e CI |
 
 ---
 
 ## Repositório
 
-Todo o código deste projeto está em:
-
 **https://github.com/VictorFLimax/conferencia-lotes-qualidade**
 
-Desenvolvido pela equipe: **Victor**, **André**, **Gustavo** e **Mouriem**.
-
-Para dúvidas, issues ou melhorias, abra uma issue ou pull request nesse repositório.
+Desenvolvido por: **Victor**, **André**, **Gustavo** e **Mouriem**.
