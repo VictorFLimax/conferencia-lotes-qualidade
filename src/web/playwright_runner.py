@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import logging
+import subprocess
+import sys
 
 from playwright.sync_api import sync_playwright
 
@@ -11,6 +13,34 @@ from src.pages.FormPagePlaywright import FormPagePlaywright
 from src.pages.LoginPagePlaywright import LoginPage
 
 logger = logging.getLogger(__name__)
+
+
+def _instalar_chromium() -> bool:
+    """Baixa o Chromium do Playwright (necessário na 1ª execução e no Runner)."""
+    logger.info("[Playwright] Instalando Chromium (python -m playwright install)...")
+    processo = subprocess.run(
+        [sys.executable, "-m", "playwright", "install", "chromium"],
+        capture_output=True,
+        text=True,
+    )
+    if processo.returncode == 0:
+        logger.info("[Playwright] Chromium instalado.")
+        return True
+    logger.error("[Playwright] Falha ao instalar Chromium: %s", processo.stderr.strip())
+    return False
+
+
+def _abrir_chromium(playwright, config: Config):
+    try:
+        return playwright.chromium.launch(headless=config.playwright_headless)
+    except Exception as exc:
+        navegador_ausente = "Executable doesn't exist" in str(exc)
+        if not (navegador_ausente and config.playwright_auto_install):
+            raise
+        logger.warning("[Playwright] Navegador ausente — instalando automaticamente.")
+        if not _instalar_chromium():
+            raise
+        return playwright.chromium.launch(headless=config.playwright_headless)
 
 
 def processar_lotes_playwright(
@@ -24,7 +54,7 @@ def processar_lotes_playwright(
     pasta_snaps = pasta_screenshots(config)
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=config.playwright_headless)
+        browser = _abrir_chromium(p, config)
         page = browser.new_page()
         try:
             logger.info("[Playwright] Abrindo: %s", config.web_automation_url)

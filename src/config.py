@@ -23,6 +23,22 @@ def _resolve_path(raw: str) -> Path:
     return caminho
 
 
+def _normalizar_url(raw: str) -> str:
+    """
+    Aceita URL http(s)/file:// ou caminho de arquivo (relativo ao projeto).
+
+    Caminhos são convertidos em file:// para funcionar em qualquer máquina.
+    """
+    valor = (raw or "").strip()
+    if not valor:
+        valor = "html/login(1).html"
+
+    if valor.startswith(("http://", "https://", "file://")):
+        return valor
+
+    return _resolve_path(valor).as_uri()
+
+
 @dataclass(frozen=True)
 class Config:
     """Configurações da aplicação carregadas a partir do .env."""
@@ -47,6 +63,7 @@ class Config:
     web_automation_driver: str
     web_automation_url: str
     playwright_headless: bool
+    playwright_auto_install: bool
     selenium_headless: bool
     web_usuario: str
     web_senha: str
@@ -55,10 +72,19 @@ class Config:
     screenshot_enabled: bool
     upload_artifacts: bool
 
+    # Arquivo de configuração efetivamente usado
+    env_file: Path
+
     @classmethod
     def carregar(cls, env_path: Path | None = None) -> Config:
         caminho_env = env_path or RAIZ_PROJETO / ".env"
-        load_dotenv(caminho_env)
+        # No Runner do BotCity o .env não é enviado no ZIP; usa o padrão embarcado
+        if not caminho_env.exists():
+            embarcado = RAIZ_PROJETO / ".env.botcity"
+            if embarcado.exists():
+                caminho_env = embarcado
+        # override=False: parâmetros da task (os.environ) têm prioridade
+        load_dotenv(caminho_env, override=False)
 
         # Compatível com INPUT_FILE (uso atual) e CAMINHO_PLANILHA_ENTRADA (legado)
         planilha = os.getenv("INPUT_FILE") or os.getenv(
@@ -94,14 +120,15 @@ class Config:
                 os.getenv("WEB_AUTOMATION_ENABLED"), default=False
             ),
             web_automation_driver=driver,
-            web_automation_url=(
-                os.getenv("WEB_AUTOMATION_URL", "").strip()
-                or str((RAIZ_PROJETO / "html" / "login(1).html").as_uri())
-            ),
+            web_automation_url=_normalizar_url(os.getenv("WEB_AUTOMATION_URL", "")),
             playwright_headless=_as_bool(os.getenv("PLAYWRIGHT_HEADLESS"), default=False),
+            playwright_auto_install=_as_bool(
+                os.getenv("PLAYWRIGHT_AUTO_INSTALL"), default=True
+            ),
             selenium_headless=_as_bool(os.getenv("SELENIUM_HEADLESS"), default=False),
             web_usuario=os.getenv("WEB_USUARIO", "usuario.teste"),
             web_senha=os.getenv("WEB_SENHA", "senha.teste"),
             screenshot_enabled=_as_bool(os.getenv("SCREENSHOT_ENABLED"), default=True),
             upload_artifacts=_as_bool(os.getenv("UPLOAD_ARTIFACTS"), default=True),
+            env_file=caminho_env,
         )

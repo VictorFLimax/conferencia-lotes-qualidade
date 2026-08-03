@@ -37,12 +37,23 @@ def deve_incluir(path: Path) -> bool:
 
 def main() -> None:
     OUT.parent.mkdir(parents=True, exist_ok=True)
+    incluidos: list[str] = []
     with zipfile.ZipFile(OUT, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for path in ROOT.rglob("*"):
             if not path.is_file() or not deve_incluir(path):
                 continue
-            zf.write(path, path.relative_to(ROOT).as_posix())
-    print(f"ZIP gerado: {OUT}")
+            nome = path.relative_to(ROOT).as_posix()
+            zf.write(path, nome)
+            incluidos.append(nome)
+
+    obrigatorios = ["bot.py", "requirements.txt", ".env.botcity"]
+    faltando = [nome for nome in obrigatorios if nome not in incluidos]
+    htmls = [nome for nome in incluidos if nome.startswith("html/")]
+
+    print(f"ZIP gerado: {OUT} ({len(incluidos)} arquivos)")
+    print(f"Páginas HTML incluídas: {len(htmls)}")
+    if faltando:
+        print(f"ATENÇÃO — arquivos obrigatórios ausentes: {faltando}")
     print("Suba este arquivo no Easy Deploy (tecnologia Python). Entry point: bot.py")
 
 

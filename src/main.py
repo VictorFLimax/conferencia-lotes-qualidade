@@ -7,6 +7,7 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 from botcity.maestro import AutomationTaskFinishStatus, BotMaestroSDK
 
@@ -98,6 +99,61 @@ def _consumir_fila(maestro: BotMaestroSDK, config: Config) -> list[dict]:
     return resultados
 
 
+def _aplicar_parametros_da_task(maestro: BotMaestroSDK) -> dict[str, str]:
+    """
+    Lê os parâmetros da task no Orchestrator e aplica como variáveis de ambiente.
+
+    Permite configurar o bot pelo Maestro, sem depender de um .env no Runner.
+    https://documentation.botcity.dev/maestro/maestro-sdk/setup/
+    """
+    task_id = getattr(maestro, "task_id", None)
+    if not task_id:
+        return {}
+
+    try:
+        task = maestro.get_task(task_id)
+        parametros = dict(getattr(task, "parameters", None) or {})
+    except Exception as exc:
+        logger.warning("Não foi possível ler parâmetros da task: %s", exc)
+        return {}
+
+    aplicados: dict[str, str] = {}
+    for chave, valor in parametros.items():
+        if valor is None:
+            continue
+        os.environ[str(chave).strip()] = str(valor)
+        aplicados[str(chave).strip()] = str(valor)
+
+    if aplicados:
+        logger.info("Parâmetros da task aplicados: %s", sorted(aplicados))
+    return aplicados
+
+
+def _log_diagnostico(config: Config) -> None:
+    """Registra a configuração efetiva (aparece no Execution Log do Maestro)."""
+    logger.info("Arquivo de configuração: %s", config.env_file)
+    logger.info("DataPool: %s", config.data_pool_name)
+    logger.info("Planilha: %s (existe=%s)",
+                config.caminho_planilha_entrada,
+                config.caminho_planilha_entrada.exists())
+    logger.info(
+        "Web: habilitado=%s driver=%s url=%s",
+        config.web_automation_enabled,
+        config.web_automation_driver,
+        config.web_automation_url,
+    )
+
+    if config.web_automation_url.startswith("file://"):
+        caminho_html = Path(unquote(urlparse(config.web_automation_url).path).lstrip("/"))
+        logger.info("HTML local: %s (existe=%s)", caminho_html, caminho_html.exists())
+
+    logger.info(
+        "Screenshots=%s | UploadArtifacts=%s",
+        config.screenshot_enabled,
+        config.upload_artifacts,
+    )
+
+
 def _salvar_resumo(config: Config, resumo: dict) -> Path:
     pasta = config.log_file.parent
     pasta.mkdir(parents=True, exist_ok=True)
@@ -114,13 +170,17 @@ def main() -> int:
     inicio = datetime.now(timezone.utc)
     logger.info("=" * 60)
     logger.info("INÍCIO — Conferência de Lotes")
-    logger.info("Driver web configurado: %s | habilitado: %s",
-                config.web_automation_driver, config.web_automation_enabled)
-    logger.info("DataPool: %s", config.data_pool_name)
-    logger.info("Planilha: %s", config.caminho_planilha_entrada)
-    logger.info("=" * 60)
 
     maestro = _conectar_maestro(config)
+
+    # Parâmetros da task sobrepõem o .env/.env.botcity
+    if _aplicar_parametros_da_task(maestro):
+        config = Config.carregar()
+        _configurar_logging(config)
+
+    _log_diagnostico(config)
+    logger.info("=" * 60)
+
     credenciais = {"login": config.web_usuario, "password": config.web_senha}
 
     if config.maestro_enabled and config.vault_enabled:
