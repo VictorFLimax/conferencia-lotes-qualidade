@@ -1,4 +1,10 @@
-"""Fluxo principal: Maestro → DataPool → validação → automação web opcional."""
+"""Fluxo principal: Maestro → DataPool → validação → automação web opcional.
+
+Observabilidade (doc oficial BotCity):
+- Execution Log: https://documentation.botcity.dev/maestro/maestro-sdk/log/
+- Alerts:        https://documentation.botcity.dev/maestro/maestro-sdk/alerts-and-messages/
+- Result Files:  https://documentation.botcity.dev/maestro/maestro-sdk/result-files/
+"""
 from __future__ import annotations
 
 import json
@@ -11,15 +17,15 @@ from urllib.parse import unquote, urlparse
 
 from botcity.maestro import AutomationTaskFinishStatus, BotMaestroSDK
 
-from src.artifacts import (
-    coletar_screenshots_resultados,
-    pasta_screenshots,
-    publicar_artefato,
-    publicar_screenshots,
-)
+from src.artifacts import pasta_screenshots, publicar_resultados_execucao
 from src.bot import process_item
 from src.config import Config, RAIZ_PROJETO
 from src.dispatcher import run_dispatcher
+from src.maestro_observability import (
+    emitir_alerta,
+    garantir_execution_log,
+    registrar_etapa,
+)
 from src.vault_client import get_erp_credentials
 from src.web import executar_automacao_web
 
@@ -81,21 +87,51 @@ def _conectar_maestro(config: Config) -> BotMaestroSDK:
     return maestro
 
 
-def _consumir_fila(maestro: BotMaestroSDK, config: Config) -> list[dict]:
-    """Consome itens do DataPool e valida cada um."""
+def _consumir_fila(
+    maestro: BotMaestroSDK,
+    config: Config,
+    log_label: str,
+) -> list[dict]:
+    """Consome itens do DataPool e valida cada um, registrando no Execution Log."""
     resultados: list[dict] = []
     datapool = maestro.get_datapool(label=config.data_pool_name)
 
     task_id = getattr(maestro, "task_id", None)
     logger.info("Consumindo DataPool '%s'...", config.data_pool_name)
+    registrar_etapa(
+        maestro,
+        log_label,
+        etapa="DATAPOOL",
+        status="INICIO",
+        mensagem=f"Consumindo fila {config.data_pool_name}",
+    )
 
     while datapool.has_next():
         entry = datapool.next(task_id=str(task_id) if task_id else None)
         if entry is None:
             break
-        resultados.append(process_item(entry, config))
+        resultado = process_item(entry, config)
+        resultados.append(resultado)
+
+        lote = str(resultado.get("numero_lote", "-"))
+        ok = bool(resultado.get("aprovado"))
+        registrar_etapa(
+            maestro,
+            log_label,
+            etapa="VALIDACAO",
+            status="OK" if ok else "NOK",
+            lote=lote,
+            mensagem=str(resultado.get("mensagem", ""))[:400],
+        )
 
     logger.info("Itens processados na fila: %s", len(resultados))
+    registrar_etapa(
+        maestro,
+        log_label,
+        etapa="DATAPOOL",
+        status="FIM",
+        mensagem=f"Processados {len(resultados)} itens",
+    )
     return resultados
 
 
@@ -103,7 +139,6 @@ def _aplicar_parametros_da_task(maestro: BotMaestroSDK) -> dict[str, str]:
     """
     Lê os parâmetros da task no Orchestrator e aplica como variáveis de ambiente.
 
-    Permite configurar o bot pelo Maestro, sem depender de um .env no Runner.
     https://documentation.botcity.dev/maestro/maestro-sdk/setup/
     """
     task_id = getattr(maestro, "task_id", None)
@@ -130,12 +165,14 @@ def _aplicar_parametros_da_task(maestro: BotMaestroSDK) -> dict[str, str]:
 
 
 def _log_diagnostico(config: Config) -> None:
-    """Registra a configuração efetiva (aparece no Execution Log do Maestro)."""
+    """Registra a configuração efetiva (aparece no console / arquivo de log)."""
     logger.info("Arquivo de configuração: %s", config.env_file)
     logger.info("DataPool: %s", config.data_pool_name)
-    logger.info("Planilha: %s (existe=%s)",
-                config.caminho_planilha_entrada,
-                config.caminho_planilha_entrada.exists())
+    logger.info(
+        "Planilha: %s (existe=%s)",
+        config.caminho_planilha_entrada,
+        config.caminho_planilha_entrada.exists(),
+    )
     logger.info(
         "Web: habilitado=%s driver=%s url=%s",
         config.web_automation_enabled,
@@ -148,9 +185,10 @@ def _log_diagnostico(config: Config) -> None:
         logger.info("HTML local: %s (existe=%s)", caminho_html, caminho_html.exists())
 
     logger.info(
-        "Screenshots=%s | UploadArtifacts=%s",
+        "Screenshots=%s | UploadArtifacts=%s | ExecutionLog=%s",
         config.screenshot_enabled,
         config.upload_artifacts,
+        config.execution_log_label,
     )
 
 
@@ -181,13 +219,46 @@ def main() -> int:
     _log_diagnostico(config)
     logger.info("=" * 60)
 
+    log_label = config.execution_log_label
+    if config.maestro_enabled:
+        log_label = garantir_execution_log(maestro, log_label)
+        registrar_etapa(
+            maestro,
+            log_label,
+            etapa="INICIO",
+            status="OK",
+            mensagem="Bot iniciado",
+            driver=config.web_automation_driver,
+        )
+        emitir_alerta(
+            maestro,
+            titulo="Conferência de Lotes — início",
+            mensagem=(
+                f"Driver={config.web_automation_driver} | "
+                f"DataPool={config.data_pool_name} | "
+                f"Web={config.web_automation_enabled}"
+            ),
+            tipo="INFO",
+        )
+
     credenciais = {"login": config.web_usuario, "password": config.web_senha}
 
     if config.maestro_enabled and config.vault_enabled:
         try:
             credenciais = get_erp_credentials(maestro, config)
+            registrar_etapa(
+                maestro, log_label, etapa="VAULT", status="OK", mensagem="Credencial obtida"
+            )
         except Exception as exc:
             logger.error("Falha ao obter Vault; usando WEB_USUARIO/WEB_SENHA. %s", exc)
+            registrar_etapa(
+                maestro,
+                log_label,
+                etapa="VAULT",
+                status="WARN",
+                mensagem=f"Fallback local: {exc}",
+            )
+            emitir_alerta(maestro, "Vault falhou", str(exc), tipo="WARN")
 
     # Opcional: popular a fila a partir da planilha
     run_dispatcher_flag = os.getenv("RUN_DISPATCHER", "false").lower() == "true"
@@ -195,22 +266,38 @@ def main() -> int:
         try:
             enviados = run_dispatcher(maestro, config)
             logger.info("RUN_DISPATCHER=true — %s itens enfileirados.", enviados)
+            registrar_etapa(
+                maestro,
+                log_label,
+                etapa="DISPATCHER",
+                status="OK",
+                mensagem=f"{enviados} itens enfileirados",
+            )
         except Exception as exc:
             logger.error("Falha no dispatcher: %s", exc)
+            registrar_etapa(
+                maestro, log_label, etapa="DISPATCHER", status="ERROR", mensagem=str(exc)
+            )
+            emitir_alerta(maestro, "Falha no dispatcher", str(exc), tipo="ERROR")
+            _finalizar_task(maestro, sucesso=False, mensagem=str(exc))
             return 1
 
     resultados_validacao: list[dict] = []
     if config.maestro_enabled:
         try:
-            resultados_validacao = _consumir_fila(maestro, config)
+            resultados_validacao = _consumir_fila(maestro, config, log_label)
         except Exception as exc:
             logger.error("Falha ao consumir DataPool: %s", exc, exc_info=True)
+            registrar_etapa(
+                maestro, log_label, etapa="DATAPOOL", status="ERROR", mensagem=str(exc)
+            )
+            emitir_alerta(maestro, "Falha no DataPool", str(exc), tipo="ERROR")
             _finalizar_task(maestro, sucesso=False, mensagem=str(exc))
             return 1
     else:
         logger.info("Maestro desligado — sem consumo de DataPool.")
 
-    # Automação web nos itens aprovados (ou em todos os fields processados)
+    # Automação web nos itens aprovados (ou lote demo se fila vazia)
     resultados_web: list[dict] = []
     if config.web_automation_enabled:
         lotes_web = [
@@ -218,7 +305,6 @@ def main() -> int:
             for r in resultados_validacao
             if r.get("aprovado") and r.get("fields")
         ]
-        # Se a fila estava vazia, permite teste web com um lote de exemplo
         if not lotes_web and not resultados_validacao:
             logger.info(
                 "Fila vazia — executando automação web com lote de demonstração."
@@ -230,6 +316,15 @@ def main() -> int:
                     "status": "concluido",
                 }
             ]
+
+        registrar_etapa(
+            maestro if config.maestro_enabled else None,
+            log_label,
+            etapa="WEB",
+            status="INICIO",
+            mensagem=f"Abrindo {config.web_automation_url}",
+            driver=config.web_automation_driver,
+        )
         try:
             resultados_web = executar_automacao_web(
                 lotes_web,
@@ -237,8 +332,35 @@ def main() -> int:
                 usuario=credenciais["login"],
                 senha=credenciais["password"],
             )
+            for item in resultados_web:
+                registrar_etapa(
+                    maestro if config.maestro_enabled else None,
+                    log_label,
+                    etapa="WEB_LOTE",
+                    status="OK" if item.get("sucesso") else "NOK",
+                    lote=str(item.get("numero_lote", "-")),
+                    mensagem=str(item.get("erro") or item.get("screenshot") or ""),
+                    driver=str(item.get("driver", config.web_automation_driver)),
+                )
+            registrar_etapa(
+                maestro if config.maestro_enabled else None,
+                log_label,
+                etapa="WEB",
+                status="FIM",
+                mensagem=f"{sum(1 for r in resultados_web if r.get('sucesso'))}/{len(resultados_web)} sucessos",
+                driver=config.web_automation_driver,
+            )
         except Exception as exc:
             logger.error("Falha na automação web: %s", exc, exc_info=True)
+            registrar_etapa(
+                maestro if config.maestro_enabled else None,
+                log_label,
+                etapa="WEB",
+                status="ERROR",
+                mensagem=str(exc),
+                driver=config.web_automation_driver,
+            )
+            emitir_alerta(maestro, "Falha na automação web", str(exc), tipo="ERROR")
             _finalizar_task(maestro, sucesso=False, mensagem=f"Web: {exc}")
             return 1
 
@@ -258,53 +380,62 @@ def main() -> int:
         "web_automation_driver": config.web_automation_driver,
         "web_sucessos": web_ok,
         "web_total": len(resultados_web),
+        "execution_log_label": log_label,
         "raiz_projeto": str(RAIZ_PROJETO),
     }
     caminho_resumo = _salvar_resumo(config, resumo)
 
     if config.maestro_enabled:
-        task_id = getattr(maestro, "task_id", None)
+        # Result Files: JSON + execucao.log + screenshots PNG
+        publicados = publicar_resultados_execucao(
+            maestro, config, caminho_resumo, resultados_web
+        )
+        resumo["result_files"] = publicados
+        caminho_resumo.write_text(
+            json.dumps(resumo, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        registrar_etapa(
+            maestro,
+            log_label,
+            etapa="ARTIFACTS",
+            status="OK",
+            mensagem=(
+                f"json={publicados.get('json', 0)} "
+                f"log={publicados.get('log', 0)} "
+                f"screenshots={publicados.get('screenshots', 0)}"
+            ),
+        )
 
-        # Result Files: resumo JSON + screenshots
-        # https://documentation.botcity.dev/maestro/maestro-sdk/result-files/
-        if config.upload_artifacts and task_id:
-            publicar_artefato(
-                maestro,
-                task_id,
-                caminho_resumo,
-                artifact_name="resumo_execucao.json",
-            )
-
-            snaps = coletar_screenshots_resultados(resultados_web)
-            # Inclui screenshots de login e demais PNGs da pasta
-            pasta = pasta_screenshots(config)
-            for png in pasta.glob("*.png"):
-                if png not in snaps:
-                    snaps.append(png)
-            enviados = publicar_screenshots(maestro, task_id, snaps, config)
-            resumo["screenshots_enviados"] = enviados
-            caminho_resumo.write_text(
-                json.dumps(resumo, ensure_ascii=False, indent=2),
-                encoding="utf-8",
-            )
-        elif config.screenshot_enabled:
+        if not publicados.get("screenshots") and config.screenshot_enabled:
             logger.info(
-                "Screenshots locais em: %s (envie com UPLOAD_ARTIFACTS=true e task no Runner)",
+                "Screenshots locais em: %s",
                 pasta_screenshots(config),
             )
 
         ok = reprovados == 0 and (
             not config.web_automation_enabled or web_ok == len(resultados_web)
         )
-        _finalizar_task(
-            maestro,
-            sucesso=ok,
-            mensagem=(
-                f"Validados={len(resultados_validacao)} OK={aprovados} "
-                f"NOK={reprovados} | Web driver={config.web_automation_driver} "
-                f"sucessos={web_ok}/{len(resultados_web)}"
-            ),
+        mensagem_fim = (
+            f"Validados={len(resultados_validacao)} OK={aprovados} "
+            f"NOK={reprovados} | Web={config.web_automation_driver} "
+            f"sucessos={web_ok}/{len(resultados_web)}"
         )
+        registrar_etapa(
+            maestro,
+            log_label,
+            etapa="FIM",
+            status="SUCCESS" if ok else "FAILED",
+            mensagem=mensagem_fim,
+            driver=config.web_automation_driver,
+        )
+        emitir_alerta(
+            maestro,
+            titulo="Conferência de Lotes — fim",
+            mensagem=mensagem_fim,
+            tipo="INFO" if ok else "WARN",
+        )
+        _finalizar_task(maestro, sucesso=ok, mensagem=mensagem_fim)
 
     logger.info("FIM — resumo: %s", resumo)
     return 0

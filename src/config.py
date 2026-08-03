@@ -72,6 +72,9 @@ class Config:
     screenshot_enabled: bool
     upload_artifacts: bool
 
+    # Execution Log no Orchestrator
+    execution_log_label: str
+
     # Arquivo de configuração efetivamente usado
     env_file: Path
 
@@ -130,5 +133,9 @@ class Config:
             web_senha=os.getenv("WEB_SENHA", "senha.teste"),
             screenshot_enabled=_as_bool(os.getenv("SCREENSHOT_ENABLED"), default=True),
             upload_artifacts=_as_bool(os.getenv("UPLOAD_ARTIFACTS"), default=True),
+            execution_log_label=os.getenv(
+                "EXECUTION_LOG_LABEL", "ConferenciaLotes_Execucao"
+            ).strip()
+            or "ConferenciaLotes_Execucao",
             env_file=caminho_env,
         )

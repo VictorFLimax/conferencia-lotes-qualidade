@@ -321,23 +321,36 @@ Códigos de saída: `0` sucesso · `1` erro crítico.
 | `logs/resumo_execucao.json` | Resumo (aprovados, reprovados, web) |
 | `logs/screenshots/*.png` | Screenshots de login / sucesso / erro |
 
-### Result Files (Maestro Artifacts)
+### Result Files, Logs e Alerts (doc oficial)
 
 Com `SCREENSHOT_ENABLED=true` e `UPLOAD_ARTIFACTS=true`, ao rodar **via Runner** (com `task_id`), o bot envia:
 
-- `resumo_execucao.json`
-- cada PNG de `logs/screenshots/`
+| Artefato | Onde ver |
+|----------|----------|
+| `resumo_execucao.json` | Result Files |
+| `execucao.log` | Result Files |
+| `logs/screenshots/*.png` | Result Files |
 
-via `maestro.post_artifact(...)` — visíveis em **Result Files** no Orchestrator:
+API usada: `maestro.post_artifact(...)`  
+Docs: https://documentation.botcity.dev/maestro/maestro-sdk/result-files/
 
-https://documentation.botcity.dev/maestro/maestro-sdk/result-files/
+Além disso, o bot grava o **Execution Log** (`maestro.new_log` / `new_log_entry`) com etapas:
+
+`INICIO` → `DATAPOOL` → `VALIDACAO` → `WEB` → `WEB_LOTE` → `ARTIFACTS` → `FIM`
+
+Label padrão: `ConferenciaLotes_Execucao` (variável `EXECUTION_LOG_LABEL`)  
+Docs: https://documentation.botcity.dev/maestro/maestro-sdk/log/
+
+E emite **Alerts** (`maestro.alert`) no início, fim e erros:  
+https://documentation.botcity.dev/maestro/maestro-sdk/alerts-and-messages/
 
 ```env
 SCREENSHOT_ENABLED=true
 UPLOAD_ARTIFACTS=true
+EXECUTION_LOG_LABEL=ConferenciaLotes_Execucao
 ```
 
-Em execução local sem `task_id`, os PNGs ficam só em disco.
+Em execução local sem `task_id`, screenshots e log ficam só em disco; o Execution Log só sobe quando há task no Runner.
 
 ---
 

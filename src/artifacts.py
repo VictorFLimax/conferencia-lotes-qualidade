@@ -2,6 +2,7 @@
 
 Documentação:
 https://documentation.botcity.dev/maestro/maestro-sdk/result-files/
+https://documentation.botcity.dev/maestro/features/result-files/
 """
 from __future__ import annotations
 
@@ -87,3 +88,60 @@ def coletar_screenshots_resultados(resultados_web: list[dict]) -> list[Path]:
         if snap:
             paths.append(Path(snap))
     return paths
+
+
+def publicar_resultados_execucao(
+    maestro: BotMaestroSDK,
+    config: Config,
+    caminho_resumo: Path,
+    resultados_web: list[dict],
+) -> dict[str, int]:
+    """
+    Publica no Maestro tudo o que permite acompanhar a execução:
+    - resumo JSON
+    - log de execução (arquivo)
+    - screenshots PNG
+
+    Visível em: Orchestrator → Result Files / aba Result Files da task.
+    """
+    task_id = getattr(maestro, "task_id", None)
+    if not config.upload_artifacts:
+        logger.info("UPLOAD_ARTIFACTS=false — nenhum Result File será enviado.")
+        return {"json": 0, "log": 0, "screenshots": 0}
+
+    if not task_id:
+        logger.info(
+            "Sem task_id — Result Files ficam só locais em %s",
+            config.log_file.parent,
+        )
+        return {"json": 0, "log": 0, "screenshots": 0}
+
+    json_ok = (
+        1
+        if publicar_artefato(
+            maestro, task_id, caminho_resumo, artifact_name="resumo_execucao.json"
+        )
+        else 0
+    )
+
+    log_ok = 0
+    if config.log_file.exists():
+        log_ok = (
+            1
+            if publicar_artefato(
+                maestro,
+                task_id,
+                config.log_file,
+                artifact_name="execucao.log",
+            )
+            else 0
+        )
+
+    snaps = coletar_screenshots_resultados(resultados_web)
+    pasta = pasta_screenshots(config)
+    for png in sorted(pasta.glob("*.png")):
+        if png not in snaps:
+            snaps.append(png)
+
+    shots = publicar_screenshots(maestro, task_id, snaps, config)
+    return {"json": json_ok, "log": log_ok, "screenshots": shots}
