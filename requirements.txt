@@ -8,6 +8,6 @@ selenium
 webdriver-manager
 playwright
 
-# Testes
+
 pytest
-pytest-asyncio
+pytest-playwright

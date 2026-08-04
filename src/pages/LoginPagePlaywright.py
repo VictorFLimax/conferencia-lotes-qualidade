@@ -1,28 +1,43 @@
-from playwright.sync_api import Page
+import logging
+import re
+from playwright.async_api import Page
+
+logger = logging.getLogger(__name__)
 
 
-class LoginPage:
+class LoginPagePlaywright:
+    """
+    Page Object para login.html (Playwright, assíncrono).
+
+    Usa locators semânticos (get_by_label / get_by_role / get_by_text),
+    alinhados com os labels e textos reais do HTML de login.
+    """
 
     def __init__(self, page: Page):
         self.page = page
 
-        # Mapeamento dos elementos (utilizando locators)
-        self.usuario_input = page.get_by_label("Usuario ou E-mail")
-        self.senha_input = page.get_by_label("Senha")
-        self.login_button = page.get_by_role("button", name="Entrar")
+    async def fazer_login(self, usuario: str, senha: str):
+        logger.info("[LoginPage-Playwright] Preenchendo credenciais de login...")
+        await self.page.get_by_label(re.compile("Usuário ou E-mail")).fill(usuario)
+        await self.page.get_by_label(re.compile("Senha")).fill(senha)
 
-    def fazer_login(self, usuario: str, senha: str):
-        # O Playwright já aguarda o elemento estar visível e interativo automaticamente
-        url_inicial = self.page.url
+        logger.info("[LoginPage-Playwright] Clicando em 'Entrar'...")
+        await self.page.get_by_role("button", name="Entrar").click()
 
-        # Preenche o usuário (fill limpa o campo antes de digitar)
-        self.usuario_input.fill(usuario)
+    async def is_login_sucesso(self) -> bool:
+        try:
+            mensagem = self.page.get_by_text("Login realizado com sucesso.")
+            await mensagem.wait_for(state="visible", timeout=5000)
+            return True
+        except Exception as e:
+            logger.warning(f"[LoginPage-Playwright] Sucesso não confirmado: {e}")
+            return False
 
-        # Preenche a senha
-        self.senha_input.fill(senha)
-
-        # Clica no botão de login
-        self.login_button.click()
-
-        # Aguarda a URL mudar após o login
-        self.page.wait_for_url(lambda url: url != url_inicial)
+    async def is_login_erro(self) -> bool:
+        try:
+            mensagem = self.page.get_by_text("Usuário ou senha inválidos.")
+            await mensagem.wait_for(state="visible", timeout=5000)
+            return True
+        except Exception as e:
+            logger.warning(f"[LoginPage-Playwright] Erro não confirmado: {e}")
+            return False

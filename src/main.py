@@ -1,6 +1,6 @@
 import logging
 import os
-from web_automation import preencher_lote
+from src.web_automation_playwright import preencher_lote
 
 # Configuração básica do logger para o orquestrador
 logging.basicConfig(
