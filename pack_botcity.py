@@ -46,15 +46,18 @@ def main() -> None:
             zf.write(path, nome)
             incluidos.append(nome)
 
-    obrigatorios = ["bot.py", "requirements.txt", ".env.botcity"]
+    obrigatorios = ["bot.py", "requirements.txt", ".env.botcity", "html/login.html", "html/lote-teste.html"]
     faltando = [nome for nome in obrigatorios if nome not in incluidos]
-    htmls = [nome for nome in incluidos if nome.startswith("html/")]
+    htmls = [nome for nome in incluidos if nome.startswith("html/") or nome.startswith("web/")]
 
     print(f"ZIP gerado: {OUT} ({len(incluidos)} arquivos)")
-    print(f"Páginas HTML incluídas: {len(htmls)}")
+    print(f"Páginas HTML incluídas ({len(htmls)}):")
+    for nome in sorted(htmls):
+        print(f"  - {nome}")
     if faltando:
         print(f"ATENÇÃO — arquivos obrigatórios ausentes: {faltando}")
     print("Suba este arquivo no Easy Deploy (tecnologia Python). Entry point: bot.py")
+    print("WEB_AUTOMATION_URL padrão: html/login.html")
 
 
 if __name__ == "__main__":

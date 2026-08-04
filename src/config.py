@@ -28,15 +28,30 @@ def _normalizar_url(raw: str) -> str:
     Aceita URL http(s)/file:// ou caminho de arquivo (relativo ao projeto).
 
     Caminhos são convertidos em file:// para funcionar em qualquer máquina.
+    Se o arquivo configurado não existir, tenta fallbacks conhecidos.
     """
     valor = (raw or "").strip()
     if not valor:
-        valor = "html/login(1).html"
+        valor = "html/login.html"
 
     if valor.startswith(("http://", "https://", "file://")):
         return valor
 
-    return _resolve_path(valor).as_uri()
+    caminho = _resolve_path(valor)
+    if caminho.exists():
+        return caminho.as_uri()
+
+    # Fallbacks: nome antigo login(1).html → login.html → web/lote-teste.html
+    for candidato in (
+        RAIZ_PROJETO / "html" / "login.html",
+        RAIZ_PROJETO / "html" / "lote-teste.html",
+        RAIZ_PROJETO / "web" / "lote-teste.html",
+    ):
+        if candidato.exists():
+            return candidato.as_uri()
+
+    # Mantém o URI esperado para o log apontar o caminho faltante
+    return caminho.as_uri()
 
 
 @dataclass(frozen=True)
