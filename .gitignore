@@ -1,9 +1,27 @@
 .env
 __pycache__/
+*.pyc
 logs/
 *.log
 relatorio_execucao.json
+resumo_execucao.json
 .venv/
 venv/
+*.xlsx
+!dados_entrada/.gitkeep
+sucesso_*.png
+erro_*.png
+dist/
+*.zip
+.pytest_cache/
+.idea/
+.vscode/
+
+# Evidencias em video (nao versionar: excedem o limite de 100 MB do GitHub)
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
 .png
 .jpg

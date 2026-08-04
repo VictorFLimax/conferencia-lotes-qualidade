@@ -2,6 +2,7 @@ python-dotenv
 botcity-maestro-sdk
 python-json-logger
 pandas
+openpyxl
 
 # Automação web
 selenium
