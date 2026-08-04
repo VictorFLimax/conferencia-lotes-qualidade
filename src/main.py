@@ -14,6 +14,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import unquote, urlparse
+from src.web_automation_playwright import preencher_lote
 
 from botcity.maestro import AutomationTaskFinishStatus, BotMaestroSDK
 

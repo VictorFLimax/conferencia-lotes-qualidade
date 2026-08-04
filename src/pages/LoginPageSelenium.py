@@ -10,6 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 class LoginPage:
     def __init__(self, driver: WebDriver, timeout: int = 10):
@@ -18,6 +19,8 @@ class LoginPage:
         self.usuario_input = (By.ID, "usuario")
         self.senha_input = (By.ID, "senha")
         self.login_button = (By.CSS_SELECTOR, "button.btn-submit")
+        self.msg_sucesso = (By.ID, "mensagemSucesso")
+        self.msg_erro = (By.ID, "mensagemErro")
 
     def fazer_login(self, usuario: str, senha: str) -> None:
         logger.info("[Selenium] Preenchendo credenciais de login...")

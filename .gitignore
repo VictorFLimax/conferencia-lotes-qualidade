@@ -23,3 +23,5 @@ dist/
 *.avi
 *.mkv
 *.webm
+.png
+.jpg

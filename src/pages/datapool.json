@@ -1,14 +1,17 @@
 [
     {
-        "numero_lote": "1001",
-        "produto": "10",
-        "produto_id": 10,
-        "status": "Ativo"
+        "numero_lote": "LOTE-2026-0001",
+        "produto_id": 1,
+        "status": "pendente"
     },
     {
-        "numero_lote": "1002",
-        "produto": "20",
-        "produto_id": 20,
-        "status": "Pendente"
+        "numero_lote": "LOTE-2026-0002",
+        "produto_id": 2,
+        "status": "processamento"
+    },
+    {
+        "numero_lote": "LOTE-2026-0003",
+        "produto_id": 1,
+        "status": "concluido"
     }
 ]

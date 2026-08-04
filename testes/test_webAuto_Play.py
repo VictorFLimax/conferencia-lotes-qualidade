@@ -1,4 +1,5 @@
-from web_automation import preencher_lote
+import pytest
+from src.web_automation_playwright import preencher_lote
 
 
 def test_preencher_lote_sucesso():

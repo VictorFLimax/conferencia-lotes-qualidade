@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 class FormPagePlaywright:
     def __init__(self, page: Page):
         self.page = page
+        # Locator do elemento de mensagem de sucesso
+        self.msg_sucesso = page.locator("#mensagemSucesso")
 
     def preencher_formulario(self, dados_lote: dict) -> None:
         numero = str(dados_lote.get("numero_lote") or dados_lote.get("lote_id", ""))
