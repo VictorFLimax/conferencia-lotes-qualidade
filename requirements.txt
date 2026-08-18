@@ -12,3 +12,4 @@ playwright
 
 pytest
 pytest-playwright
+pytest-cov

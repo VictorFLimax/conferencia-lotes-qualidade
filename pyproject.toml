@@ -1,0 +1,12 @@
+[tool.coverage.run]
+omit = [
+    "src/main.py",
+    "src/bot.py",
+    "src/logger.py",
+    "src/maestro_observability.py",
+    "src/validacao_aula22.py",
+    "src/vault_client.py",
+    "src/pages/playwright_automation.py",
+    "src/pages/selenium_automation.py",
+    "src/web/selenium_runner.py",
+]
