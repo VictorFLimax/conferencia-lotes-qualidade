@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 import pandas as pd
 from botcity.maestro import BotMaestroSDK, DataPoolEntry
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_dispatcher(maestro: BotMaestroSDK, config: Config) -> int:
-    caminho = config.caminho_planilha_entrada
+    caminho = Path(config.caminho_planilha_entrada)
     if not caminho.exists():
         raise FileNotFoundError(f"Planilha de entrada não encontrada: {caminho}")
 
