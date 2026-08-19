@@ -48,7 +48,8 @@ def run_dispatcher(maestro: BotMaestroSDK, config: Config) -> int:
     return itens_enviados
 
 
-if __name__ == "__main__":
+def executar_cli() -> int:
+    """Ponto de entrada local (`python -m src.dispatcher`)."""
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
@@ -62,3 +63,8 @@ if __name__ == "__main__":
         key=cfg.maestro_api_key,
     )
     run_dispatcher(sdk, cfg)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(executar_cli())

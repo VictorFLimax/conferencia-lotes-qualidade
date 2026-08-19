@@ -25,8 +25,8 @@ Bot de automação em Python para **conferência e auditoria de lotes de qualida
 | Dispatcher → DataPool | Pronto | Popula a fila a partir da planilha |
 | Performer (validação) | Pronto | Consome fila e aplica RN01–RN07 |
 | Escolha Playwright / Selenium | Pronto | `WEB_AUTOMATION_DRIVER` |
-| HTML de teste no ZIP | Pronto | `html/login(1).html` → `lote-teste.html` |
-| URL relativa portável | Pronto | `WEB_AUTOMATION_URL=html/login(1).html` |
+| HTML de teste no ZIP | Pronto | `html/login.html` → `lote-teste.html` |
+| URL relativa portável | Pronto | `WEB_AUTOMATION_URL=html/login.html` |
 | Auto-install Chromium | Pronto | `PLAYWRIGHT_AUTO_INSTALL=true` |
 | Screenshots | Pronto | `logs/screenshots/*.png` |
 | Result Files (artefatos) | Pronto | JSON + log + PNGs via `post_artifact` |
@@ -35,6 +35,7 @@ Bot de automação em Python para **conferência e auditoria de lotes de qualida
 | Parâmetros da task | Pronto | Sobrescrevem o `.env` no Runner |
 | Pack ZIP (`pack_botcity.py`) | Pronto | Gera `dist/conferencia-lotes-botcity.zip` |
 | Vault (credenciais) | Pronto | Opcional via `VAULT_ENABLED` |
+| Relatório Aula 22/24 | Pronto | Dashboard + 10 indicadores — `python main.py` |
 
 ---
 
@@ -92,7 +93,6 @@ conferencia-lotes-qualidade/
 ├── .env.botcity                   # Config embarcada no ZIP (sem segredos)
 ├── README.md
 ├── html/
-│   ├── login(1).html              # Login (ambiente de teste)
 │   ├── login.html
 │   └── lote-teste.html            # Formulário de lote
 ├── src/
@@ -184,7 +184,7 @@ Copy-Item .env.example .env   # Windows
 | `RUN_DISPATCHER` | Popular a fila ao iniciar | `false` |
 | `WEB_AUTOMATION_ENABLED` | Liga automação web | `true` |
 | `WEB_AUTOMATION_DRIVER` | `playwright` ou `selenium` | `playwright` |
-| `WEB_AUTOMATION_URL` | URL http(s) **ou** caminho relativo | `html/login(1).html` |
+| `WEB_AUTOMATION_URL` | URL http(s) **ou** caminho relativo | `html/login.html` |
 | `PLAYWRIGHT_HEADLESS` | Headless Playwright | `true` no Runner |
 | `PLAYWRIGHT_AUTO_INSTALL` | Instala Chromium se faltar | `true` |
 | `SELENIUM_HEADLESS` | Headless Selenium | `true` no Runner |
@@ -201,7 +201,7 @@ Copy-Item .env.example .env   # Windows
 ```env
 WEB_AUTOMATION_ENABLED=true
 WEB_AUTOMATION_DRIVER=playwright   # ou: selenium
-WEB_AUTOMATION_URL=html/login(1).html
+WEB_AUTOMATION_URL=html/login.html
 ```
 
 O orquestrador (`src/web/orchestrator.py`) lê `WEB_AUTOMATION_DRIVER` e chama o runner correspondente.
@@ -270,7 +270,7 @@ python bot.py
 
 Fluxo web:
 
-1. Abre `html/login(1).html`
+1. Abre `html/login.html`
 2. Preenche usuário/senha → **Entrar**
 3. Vai para `lote-teste.html`
 4. Preenche lote, produto e status → **Processar Lote**
@@ -281,6 +281,17 @@ Fluxo web:
 ```powershell
 python -m src.dispatcher
 ```
+
+### Relatório executivo (Pipeline B — Aulas 22 e 24)
+
+Não usa Maestro. Detalhes em [README_AULA22.md](README_AULA22.md) e [PDD.md](PDD.md).
+
+```powershell
+$env:PYTHONPATH = (Get-Location).Path
+python main.py
+```
+
+Gera o Excel com 8 abas (incluindo Ranking de Regras e Dicionário), o `resumo_executivo.md` e o JSON em `logs/`. Premissa do ganho de tempo: 120 s manuais vs 5 s automatizados por registro (estimativa didática).
 
 ---
 

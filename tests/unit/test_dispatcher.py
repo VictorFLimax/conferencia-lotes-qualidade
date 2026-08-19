@@ -1,9 +1,8 @@
 from pathlib import Path
-import runpy
 from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
-from src.dispatcher import run_dispatcher
+from src.dispatcher import executar_cli, run_dispatcher
 
 
 # FIX 1: Usando tmp_path para criar um arquivo real que o .exists() valide
@@ -29,33 +28,22 @@ def test_run_dispatcher_success(mock_read_excel, tmp_path):
   run_dispatcher(mock_sdk, mock_config)
 
 
-# FIX 2: Interceptando o BotMaestroSDK na ORIGEM do pacote para zerar requisições HTTP
-import runpy
-from pathlib import Path
-from unittest.mock import MagicMock, patch
-import pytest
-
-
 @pytest.mark.unit
-@patch("botcity.maestro.BotMaestroSDK")
+@patch("src.dispatcher.BotMaestroSDK")
 @patch("src.dispatcher.Config.carregar")
-@patch("src.dispatcher.run_dispatcher")  # Intercepta a chamada antes do FileNotFoundError
+@patch("src.dispatcher.run_dispatcher")
 def test_main_block(mock_run_dispatcher, mock_carregar_config, mock_sdk_class):
-  # Instância mock do Config
-  mock_cfg = MagicMock()
-  mock_cfg.caminho_planilha_entrada = Path("planilha_fake.xlsx")
-  mock_cfg.maestro_server_url = "http://localhost"
-  mock_cfg.maestro_login = "usuario"
-  mock_cfg.maestro_api_key = "chave"
-  mock_carregar_config.return_value = mock_cfg
+    mock_cfg = MagicMock()
+    mock_cfg.caminho_planilha_entrada = Path("planilha_fake.xlsx")
+    mock_cfg.maestro_server_url = "http://localhost"
+    mock_cfg.maestro_login = "usuario"
+    mock_cfg.maestro_api_key = "chave"
+    mock_carregar_config.return_value = mock_cfg
 
-  # Instância mock do SDK
-  mock_sdk_instance = MagicMock()
-  mock_sdk_class.return_value = mock_sdk_instance
+    mock_sdk_instance = MagicMock()
+    mock_sdk_class.return_value = mock_sdk_instance
 
-  # Executa o bloco __main__
-  runpy.run_module("src.dispatcher", run_name="__main__")
+    assert executar_cli() == 0
 
-  # Asserções
-  mock_carregar_config.assert_called_once()
-  mock_run_dispatcher.assert_called_once_with(mock_sdk_instance, mock_cfg)
+    mock_carregar_config.assert_called_once()
+    mock_run_dispatcher.assert_called_once_with(mock_sdk_instance, mock_cfg)

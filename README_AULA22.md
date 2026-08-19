@@ -12,8 +12,9 @@ Sistema de automação e validação para conferência de lotes de inspeção di
    - **Divergência**
    - **Ambíguo**
    - **Erro de Entrada**
-3. **Relatório Executivo:** Gera o arquivo `relatorio_conferencia_lotes.xlsx` contendo a aba **Resumo (Dashboard com gráficos nativos do Excel)**, abas por classificação e log de execução.
-4. **Garantia de Qualidade (Aula 23):** Suíte de testes automatizados com Pytest cobrindo todas as camadas da pirâmide de testes para evitar regressões silenciosas nas regras RN01–RN12.
+3. **Relatório Executivo:** Gera `relatorio_conferencia_lotes.xlsx` com **8 abas** (Resumo com os 10 indicadores e gráficos nativos, Todos, Válidos, Divergências, Ambíguos, Erros de Entrada, Ranking de Regras, Dicionário) e o `resumo_executivo.md`.
+4. **Indicadores (Aula 24):** camada `src/operational_indicators.py` — única fonte de verdade numérica.
+5. **Garantia de Qualidade (Aula 23):** suíte Pytest (unit, integration, regression, e2e).
 
 ---
 
@@ -26,8 +27,11 @@ Sistema de automação e validação para conferência de lotes de inspeção di
 │   ├── base_referencia.py  # Leitura e mapeamento da Base de Referência
 │   ├── config.py           # Configurações do projeto (.env)
 │   ├── relatorio.py        # Construção do relatório e gráficos no Excel
-│   ├── validacao.py        # Motor de validação das regras RN01-RN12
-│   └── validacao_aula22.py # Regras e DataClasses da Aula 22
+│   ├── operational_indicators.py  # 10 indicadores (Aula 24)
+│   ├── validacao.py               # RN do bot Maestro (não misturar)
+│   └── validacao_aula22.py        # RN01–RN12 do relatório
+├── main.py                     # Entrypoint do Pipeline B
+├── gerar_relatorio.py          # Geração Excel + resumo executivo
 ├── tests/                  # Suíte de Testes Consolidados (Aula 23)
 │   ├── conftest.py         # Fixtures e Mocks globais (Base_Referencia simulada, tmp_path)
 │   ├── unit/               # Testes Unitários (regras de negócio, parametrização e unittest)
@@ -53,20 +57,37 @@ pip install -r requirements.txt
 
 ---
 
-## Geração do Relatório Excel (Aula 22)
+## Geração do Relatório (Aula 22 + 24)
 
-### Execução
-
-No terminal (PowerShell), a partir da raiz do repositório:
+No PowerShell, na raiz:
 
 ```powershell
-# Garante que o pacote src seja localizado
 $env:PYTHONPATH = (Get-Location).Path
-
-python gerar_relatorio.py
+python main.py
+# equivalente: python gerar_relatorio.py
 ```
 
-### Configuração via .env (Opcional)
+Saídas (xlsx e logs ficam fora do Git):
+
+- `relatorio_conferencia_lotes.xlsx` — 8 abas essenciais
+- `resumo_executivo.md` — linguagem de negócio, mesmos números do Excel
+- `logs/relatorio_aula22.log` e `logs/resumo_execucao.json`
+
+### Os 10 indicadores
+
+| # | Indicador | Observação |
+|---|-----------|------------|
+| 1 | Total de registros | Contagem processada |
+| 2–5 | Válidos, Divergências, Ambíguos, Erros | Quantidade e % via `_percentual()` |
+| 6 | Regra mais acionada | `Counter` sobre `regra_aplicada` (igual à aba Ranking) |
+| 7 | Qualidade da entrada | (total − erros) / total; referência visual > 80% |
+| 8 | Revisão humana | ambíguos / total; referência visual < 15% |
+| 9 | Retrabalho | divergências / total; referência visual < 6% |
+| 10 | Ganho estimado de tempo | `total × (120 s − 5 s)` — **premissa didática**, não cronometragem |
+
+Limitações: os limiares 7–9 são só sinal visual; o dataset didático pode ficar fora deles. O ganho de tempo não é métrica de produção.
+
+### Configuração via .env (opcional)
 
 Crie um arquivo `.env` na raiz para sobrescrever os caminhos padrão:
 

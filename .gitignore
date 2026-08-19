@@ -13,7 +13,10 @@ sucesso_*.png
 erro_*.png
 dist/
 *.zip
-.pytest_cache/
+output/
+htmlcov/
+.coverage
+coverage.xml
 .idea/
 .vscode/
 

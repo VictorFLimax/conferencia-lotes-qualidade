@@ -69,6 +69,7 @@ class RegistroValidado:
     classificacao: str
     regra: str
     mensagem: str
+    regra_aplicada: str
 
     def to_dict(self) -> dict[str, Any]:
         """Dicionário amigável para DataFrame / Excel (sem jargão técnico interno)."""
@@ -112,6 +113,7 @@ def _montar(
         classificacao=classificacao,
         regra=regra,
         mensagem=mensagem,
+        regra_aplicada=regra,
     )
 
 
