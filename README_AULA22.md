@@ -12,7 +12,7 @@ Sistema de automação e validação para conferência de lotes de inspeção di
    - **Divergência**
    - **Ambíguo**
    - **Erro de Entrada**
-3. **Relatório Executivo:** Gera `relatorio_conferencia_lotes.xlsx` com **8 abas** (Resumo com os 10 indicadores e gráficos nativos, Todos, Válidos, Divergências, Ambíguos, Erros de Entrada, Ranking de Regras, Dicionário) e o `resumo_executivo.md`.
+3. **Relatório Executivo:** Gera `relatorio_conferencia_lotes.xlsx` com **8 abas** essenciais (Resumo com os 10 indicadores e gráficos nativos, Todos, Válidos, Divergências, Ambíguos, Erros de Entrada, Ranking de Regras, Dicionário) **mais a 9ª aba `Decisões de ML`** (Exercício 24-A) e o `resumo_executivo.md`.
 4. **Indicadores (Aula 24):** camada `src/operational_indicators.py` — única fonte de verdade numérica.
 5. **Garantia de Qualidade (Aula 23):** suíte Pytest (unit, integration, regression, e2e).
 
@@ -69,7 +69,7 @@ python main.py
 
 Saídas (xlsx e logs ficam fora do Git):
 
-- `relatorio_conferencia_lotes.xlsx` — 8 abas essenciais
+- `relatorio_conferencia_lotes.xlsx` — 8 abas essenciais + 9ª aba `Decisões de ML`
 - `resumo_executivo.md` — linguagem de negócio, mesmos números do Excel
 - `logs/relatorio_aula22.log` e `logs/resumo_execucao.json`
 

@@ -36,6 +36,7 @@ Bot de automação em Python para **conferência e auditoria de lotes de qualida
 | Pack ZIP (`pack_botcity.py`) | Pronto | Gera `dist/conferencia-lotes-botcity.zip` |
 | Vault (credenciais) | Pronto | Opcional via `VAULT_ENABLED` |
 | Relatório Aula 22/24 | Pronto | Dashboard + 10 indicadores — `python main.py` |
+| ML + RPA (Aula 24-A) | Pronto | Classifica ambíguos via FastAPI + RandomForest; bot nunca para |
 
 ---
 
@@ -88,39 +89,41 @@ Fluxo: **Dispatcher → DataPool → Performer → (opcional) Web → Observabil
 conferencia-lotes-qualidade/
 ├── bot.py                         # Entry point BotCity (Easy Deploy)
 ├── pack_botcity.py                # Gera o ZIP para o Maestro
+├── train_model.py                 # Dataset fictício + treino RandomForest
 ├── requirements.txt
-├── .env.example                   # Modelo local (com segredos vazios)
-├── .env.botcity                   # Config embarcada no ZIP (sem segredos)
-├── README.md
+├── docker-compose.yml             # bot + api_ml (healthcheck)
+├── .env.example
+├── api_ml/
+│   ├── main.py                    # FastAPI POST /predict e GET /health
+│   ├── encoding.py                # Mapas idênticos ao treino
+│   ├── confianca.py               # Limiares 0,85 / 0,65
+│   ├── requirements.txt
+│   └── Dockerfile
+├── models/
+│   └── classificador_lotes.pkl    # Artefato (modelo + encoders)
 ├── html/
 │   ├── login.html
-│   └── lote-teste.html            # Formulário de lote
+│   └── lote-teste.html
 ├── src/
-│   ├── main.py                    # Fluxo completo + observabilidade
-│   ├── config.py                  # Carrega .env / .env.botcity
-│   ├── dispatcher.py              # Popula DataPool
-│   ├── bot.py                     # Performer (1 item)
-│   ├── validacao.py               # RN01–RN07
+│   ├── main.py                    # Fluxo BotCity + observabilidade
+│   ├── config.py
+│   ├── dispatcher.py
+│   ├── bot.py                     # Performer Maestro (RN01–RN07)
+│   ├── item_processor.py          # Encaminha ambíguos; fallback REVISAO_ML_OFFLINE
+│   ├── ml_client.py               # Cliente resiliente + circuit breaker
+│   ├── validacao.py               # RN01–RN07 do Maestro (não misturar)
+│   ├── validacao_aula22.py        # RN01–RN12 do relatório
+│   ├── operational_indicators.py
+│   ├── relatorio.py
 │   ├── base_referencia.py
 │   ├── vault_client.py
-│   ├── artifacts.py               # post_artifact (Result Files)
-│   ├── maestro_observability.py   # Execution Log + Alerts
-│   ├── pages/                     # Page Objects
-│   │   ├── LoginPagePlaywright.py
-│   │   ├── LoginPageSelenium.py
-│   │   ├── FormPagePlaywright.py
-│   │   └── FormPageSelenium.py
+│   ├── artifacts.py
+│   ├── maestro_observability.py
+│   ├── pages/
 │   └── web/
-│       ├── orchestrator.py        # Escolhe playwright | selenium
-│       ├── playwright_runner.py   # + auto-install Chromium
-│       └── selenium_runner.py
-├── dados_entrada/                 # Planilha (*.xlsx fora do Git)
+├── dados_entrada/
 ├── logs/
-│   ├── execucao.log
-│   ├── resumo_execucao.json
-│   └── screenshots/               # PNGs de login / sucesso / erro
 └── dist/
-    └── conferencia-lotes-botcity.zip
 ```
 
 ---
@@ -165,6 +168,9 @@ Copy-Item .env.example .env   # Windows
 | `playwright` | Automação web (opção A) |
 | `selenium` + `webdriver-manager` | Automação web (opção B) |
 | `pytest` | Testes |
+| `scikit-learn` / `joblib` | Classificador de ambíguos |
+| `FastAPI` / `uvicorn` / `pydantic` | API `/predict` e `/health` |
+| `httpx` | Cliente HTTP resiliente (`MLClient`) |
 
 ---
 
@@ -193,6 +199,7 @@ Copy-Item .env.example .env   # Windows
 | `UPLOAD_ARTIFACTS` | Sobe Result Files | `true` |
 | `EXECUTION_LOG_LABEL` | Label do Execution Log | `ConferenciaLotes_Execucao` |
 | `LOG_LEVEL` | Nível de log | `INFO` |
+| `ML_API_URL` | URL da API de ML | `http://localhost:8000` (compose: `http://api_ml:8000`) |
 
 > **Nunca** versione o `.env` com segredos (já está no `.gitignore`).
 
@@ -291,7 +298,146 @@ $env:PYTHONPATH = (Get-Location).Path
 python main.py
 ```
 
-Gera o Excel com 8 abas (incluindo Ranking de Regras e Dicionário), o `resumo_executivo.md` e o JSON em `logs/`. Premissa do ganho de tempo: 120 s manuais vs 5 s automatizados por registro (estimativa didática).
+Gera o Excel com 8 abas essenciais + 9ª aba `Decisões de ML`, o `resumo_executivo.md` e o JSON em `logs/`. Premissa do ganho de tempo: 120 s manuais vs 5 s automatizados por registro (estimativa didática).
+
+---
+
+## Exercício 24-A — classificação inteligente de lotes (ML + RPA)
+
+**Como usar e testar (passo a passo):** [GUIA_USO_ML_24A.md](GUIA_USO_ML_24A.md).
+
+Camada **nova**: o motor de regras (RN01–RN12) continua igual. O modelo só decide os registros já marcados como **Ambíguo**. Separação: **o bot faz automação, o modelo faz predição, a API faz a ponte.**
+
+O que mais vale é **degradação elegante sob estresse**, não acurácia em condição ideal.
+
+```
+Planilha 10 dias → validar_registro() → Ambíguos
+                                          │
+                                          ▼
+                                    MLClient (timeout 2,5s)
+                                          │
+                     ┌────────────────────┼────────────────────┐
+                     ▼                    ▼                    ▼
+              pred válida           pred is None         circuito aberto
+              (API no ar)        (timeout/4xx/5xx)     (5 falhas seguidas)
+                     │                    │                    │
+                     ▼                    ▼                    ▼
+            calibração 0,85/0,65   REVISAO_ML_OFFLINE   REVISAO_ML_OFFLINE
+                     │                    └────────┬───────────┘
+                     ▼                             ▼
+              log JSONL + aba              bot continua o lote
+              "Decisões de ML"
+```
+
+### Como o dataset foi gerado
+
+Script versionado: `train_model.py` (300 amostras fictícias, seed 42).
+
+| Feature | Origem | Codificação |
+|---------|--------|-------------|
+| `status_raw` | Status não padronizado (RN09): EM AJUSTE, CANCELADO, BLOQUEADO, RETRABALHO, AGUARDANDO, INDEFINIDO, EM ANALISE, LIBERADO PARCIAL, QUARENTENA, DEVOLVIDO | mapa fixo inteiro (`api_ml/encoding.py`); desconhecido → `OUTRO` |
+| `turno` | manhã / tarde / noite (A/B/C da planilha viram o mesmo eixo) | 0 / 1 / 2 |
+| `tem_obs` | observação preenchida? | 0 / 1 |
+
+**Três classes**
+
+| Classe | Lógica de rótulo (antes do ruído) |
+|--------|-----------------------------------|
+| `recusar_automatico` | CANCELADO ou BLOQUEADO; DEVOLVIDO sem observação |
+| `valido_automatico` | LIBERADO PARCIAL ou AGUARDANDO com observação no turno manhã/tarde; QUARENTENA com observação de manhã |
+| `revisar` | EM AJUSTE / EM ANALISE / INDEFINIDO / RETRABALHO; noite sem observação; demais combinações ambíguas |
+
+**Ruído:** 10% das amostras trocam o rótulo para outra classe, para o modelo não ser trivial.
+
+Os mapas de status e turno vão **dentro do `.pkl`** junto do `RandomForestClassifier`, para a API codificar do mesmo jeito que o treino.
+
+### Decisões de design do modelo
+
+- **RandomForest:** lida com features categóricas já codificadas, não exige escala, é estável em dataset pequeno e serializa fácil com `joblib`.
+- **Hiperparâmetros:** `n_estimators=120`, `max_depth=8`, `min_samples_leaf=3`, `random_state=42` — profundidade limitada para não memorizar o ruído.
+- **Split:** 80/20 estratificado. Acurácia no teste da geração atual: **88,33%**. Um modelo de ~80% que nunca para o bot vale mais que 95% que trava quando a API cai.
+- **Limiares 0,85 e 0,65:** 0,95 reduziria falsos automáticos, mas mandaria quase tudo para revisão humana. 0,85 equilibra risco e volume. É escolha de **risco de negócio**, não técnica pura. Falso `recusar_automatico` descarta lote bom (custo alto e visível); falso `valido_automatico` deixa passar lote ruim (custo silencioso). Por isso só a confiança **alta** aplica a classe prevista automaticamente.
+
+### Como subir a API
+
+```powershell
+$env:PYTHONPATH = (Get-Location).Path
+
+# 1) treinar (gera models/classificador_lotes.pkl)
+python train_model.py
+
+# 2) API local (dev)
+uvicorn api_ml.main:app --reload --port 8000
+
+# ou via docker-compose (local — não é deploy remoto)
+docker-compose up --build api_ml
+```
+
+Variável `ML_API_URL` (default `http://localhost:8000`; no compose o bot usa `http://api_ml:8000`).
+
+```powershell
+# health
+curl http://localhost:8000/health
+
+# predict (turno inválido deve dar 422)
+curl -X POST http://localhost:8000/predict -H "Content-Type: application/json" -d "{\"lote_id\":\"LG-1\",\"status_raw\":\"EM AJUSTE\",\"turno\":\"manhã\",\"tem_obs\":true}"
+```
+
+`GET /health` → `{"status":"ok","modelo_carregado":true}` ou HTTP 503 se o `.pkl` não carregou. O processo da API **não cai**.
+
+### Calibração de confiança (exata)
+
+| Probabilidade | Nível | Ação no bot |
+|---------------|-------|-------------|
+| ≥ 0,85 | alta | aplica a classe prevista (`valido_automatico` / `revisar` / `recusar_automatico`) |
+| 0,65 ≤ p < 0,85 | média | `revisar` |
+| < 0,65 | baixa | `revisar_prioritario` |
+
+### Comportamento sob falha
+
+`src/ml_client.py` **nunca lança exceção**. Timeout, rede, HTTP 4xx/5xx e JSON inválido viram `None`.
+
+**Circuit breaker:** 5 falhas consecutivas abrem o circuito; daí em diante `classificar()` devolve `None` **sem tentar a rede**. Uma chamada bem-sucedida zera o contador. Para voltar a tentar com o circuito aberto: `MLClient.reset()` ou reinício do processo.
+
+**Fallback:** `src/item_processor.py` — se `pred is None`, o lote vai para `REVISAO_ML_OFFLINE` e o pipeline dos 10 dias **continua**. Nada some.
+
+Auditoria: log JSONL em `logs/decisoes_ml.jsonl` (`lote_id`, `classe`, `probabilidade`, `nivel_confianca`, `latencia_ms`, `offline`) e 9ª aba **Decisões de ML** no Excel.
+
+### Ensaio de sabotagem (local)
+
+Derrubar a API no meio do lote **não pode travar o bot**.
+
+```powershell
+$env:PYTHONPATH = (Get-Location).Path
+
+# 1) API no ar — decisões reais na aba / JSONL
+docker-compose up --build api_ml
+python main.py
+
+# 2) Sabotagem: derruba a API e roda de novo
+docker-compose stop api_ml
+python main.py
+```
+
+Esperado no passo 2: o processo termina; ambíguos saem como `REVISAO_ML_OFFLINE` no log e na 9ª aba; após 5 falhas o circuit breaker para de chamar a rede (latência cai para imediata). Sem API local, o mesmo fallback acontece ao rodar `python main.py` direto.
+
+Atalho sem planilha (API propositalmente inacessível; confirma as 8 decisões offline e o circuito aberto):
+
+```powershell
+$env:PYTHONPATH = (Get-Location).Path
+python scripts/ensaio_sabotagem.py
+```
+
+### Testes novos
+
+```powershell
+$env:PYTHONPATH = (Get-Location).Path
+pytest -m unit
+pytest -m integration
+pytest --cov=src --cov-report=term-missing --cov-fail-under=80
+```
+
+Inclui: payload válido `/predict`, turno inválido 422, `MLClient` sucesso, API fora (`None` sem exceção), circuit breaker na 6ª chamada sem HTTP.
 
 ---
 
@@ -404,12 +550,14 @@ Com `VAULT_ENABLED=true`, busca `CREDENTIAL_LABEL` no Maestro. Com Vault off, us
 
 ```bash
 docker compose up --build
+docker compose up --build api_ml    # só a API de ML
 # ou
 docker build -t conferencia-lotes .
 docker run --env-file .env -v ./dados_entrada:/app/dados_entrada:ro conferencia-lotes
 ```
 
-Entry point do container: `python bot.py`.
+Entry point do container do bot: `python bot.py`.  
+A API (`api_ml`) sobe com `uvicorn` na porta 8000 e healthcheck em `GET /health`. No compose, o bot resolve a URL pelo nome do serviço: `http://api_ml:8000`.
 
 ---
 
@@ -421,6 +569,7 @@ Entry point do container: `python bot.py`.
 | BotCity Maestro SDK | DataPool, tasks, logs, alerts, artefatos |
 | Playwright / Selenium | Automação web (escolha via `.env`) |
 | pandas / openpyxl | Planilhas |
+| FastAPI / scikit-learn | API de predição + classificador de ambíguos |
 | python-dotenv | Configuração |
 | Docker / GitHub Actions | Empacotamento e CI |
 

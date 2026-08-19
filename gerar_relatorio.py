@@ -30,6 +30,7 @@ from openpyxl.chart.series import DataPoint
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils.dataframe import dataframe_to_rows
 
+from src.item_processor import DecisaoML, processar_ambiguos_com_ml
 from src.operational_indicators import (
     META_QUALIDADE_ENTRADA_PCT,
     META_RETRABALHO_PCT,
@@ -533,13 +534,36 @@ def _montar_dicionario(wb: Workbook) -> None:
     ws.row_dimensions[1].height = 22
 
 
+def _montar_decisoes_ml(wb: Workbook, decisoes: list[DecisaoML] | None) -> None:
+    """9ª aba — auditoria de tudo que passou pelo classificador (sem perder registro)."""
+    ws = wb.create_sheet("Decisões de ML")
+    linhas = [d.to_excel_row() for d in (decisoes or [])]
+    df = pd.DataFrame(linhas)
+    if df.empty:
+        df = pd.DataFrame(
+            columns=[
+                "Lote",
+                "Classe prevista",
+                "Probabilidade",
+                "Nível de confiança",
+                "Latência (ms)",
+                "Ação aplicada",
+                "API indisponível",
+                "Status original",
+                "Turno",
+            ]
+        )
+    _escrever_dataframe(ws, df)
+
+
 def gerar_excel(
     validados: list[RegistroValidado],
     indicadores: OperationalIndicators,
     caminho_saida: Path,
     linhas_log: list[str] | None = None,
+    decisoes_ml: list[DecisaoML] | None = None,
 ) -> None:
-    """Gera o Excel com as 8 abas essenciais (mais Log opcional)."""
+    """Gera o Excel com as 8 abas essenciais + 9ª aba Decisões de ML (Log opcional)."""
     _validar_soma_abas(indicadores)
 
     df_todos = _df_de(validados)
@@ -576,6 +600,7 @@ def gerar_excel(
 
     _montar_ranking(wb, indicadores)
     _montar_dicionario(wb)
+    _montar_decisoes_ml(wb, decisoes_ml)
 
     if linhas_log:
         ws_log = wb.create_sheet("Log")
@@ -728,11 +753,15 @@ def main() -> int:
     print(f"Saída:   {saida}")
 
     validados = processar(entrada)
+    decisoes_ml = processar_ambiguos_com_ml(
+        validados,
+        caminho_jsonl=_resolver(Path("logs/decisoes_ml.jsonl")),
+    )
     indicadores = calcular_indicadores(validados)
     _validar_soma_abas(indicadores)
 
     linhas_log = gravar_log(log_path, indicadores)
-    gerar_excel(validados, indicadores, saida, linhas_log)
+    gerar_excel(validados, indicadores, saida, linhas_log, decisoes_ml)
     gerar_resumo_executivo(indicadores, resumo_md)
     gravar_json_execucao(json_path, indicadores)
 
@@ -765,6 +794,7 @@ def main() -> int:
         f"Regra mais acionada: {indicadores.regra_mais_acionada_codigo} "
         f"({indicadores.regra_mais_acionada_qtd})"
     )
+    print(f"Decisões de ML: {len(decisoes_ml)} (aba 'Decisões de ML')")
     print(f"Log: {log_path}")
     print(f"Relatório: {saida}")
     print(f"Resumo executivo: {resumo_md}")
