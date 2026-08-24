@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 logger = logging.getLogger(__name__)
 
-class LoginPage:
+class LoginPageSelenium:
     def __init__(self, driver: WebDriver, timeout: int = 10):
         self.driver = driver
         self.wait = WebDriverWait(driver, timeout)

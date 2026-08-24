@@ -3,12 +3,20 @@ botcity-maestro-sdk
 python-json-logger
 pandas
 openpyxl
+numpy
 
 # Automação web
 selenium
 webdriver-manager
 playwright
 
+# ML + API de predição (Exercício 24-A)
+scikit-learn==1.9.0
+fastapi
+uvicorn[standard]
+pydantic
+joblib
+httpx
 
 pytest
 pytest-playwright

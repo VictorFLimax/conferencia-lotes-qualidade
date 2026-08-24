@@ -8,7 +8,7 @@ from playwright.sync_api import Page
 logger = logging.getLogger(__name__)
 
 
-class LoginPage:
+class LoginPagePlaywright:
     def __init__(self, page: Page):
         self.page = page
         self.usuario_input = page.locator("#usuario")
