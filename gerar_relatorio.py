@@ -8,7 +8,7 @@ Uso:
   python gerar_relatorio.py
 
 Variáveis de ambiente (.env):
-  INPUT_FILE   — planilha de entrada (default: dados_entrada/inspecao_lotes_10dias_sem gabarito.xlsx)
+  INPUT_FILE   — planilha de entrada (default: dados_entrada/inspecao_lotes_dia.xlsx)
   OUTPUT_FILE  — Excel de saída (default: relatorio_conferencia_lotes.xlsx na raiz)
   LOG_FILE     — log texto (default: logs/relatorio_aula22.log)
 """
@@ -48,7 +48,7 @@ from src.validacao_aula22 import (
 )
 
 RAIZ = Path(__file__).resolve().parent
-PADRAO_ABA_DIARIA = re.compile(r"^Insp_(\d{2})_(\d{2})_2026$")
+PADRAO_ABA_DIARIA = re.compile(r"^(?:Insp|Inspecao)_(\d{2})_(\d{2})_2026$")
 COLUNAS_DIARIAS = [
     "lote_id",
     "produto",
