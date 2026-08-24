@@ -75,7 +75,7 @@ def _carregar_caminhos() -> tuple[Path, Path, Path, Path, Path]:
         Path(
             os.getenv(
                 "INPUT_FILE",
-                "dados_entrada/inspecao_lotes_10dias_sem gabarito.xlsx",
+                "dados_entrada/inspecao_lotes_dia.xlsx",
             )
         )
     )
