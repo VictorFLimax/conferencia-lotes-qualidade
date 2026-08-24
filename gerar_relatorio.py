@@ -89,7 +89,7 @@ def _carregar_caminhos() -> tuple[Path, Path, Path, Path, Path]:
 
 
 def _data_referencia_da_aba(nome_aba: str) -> str:
-    """Extrai DD/MM/AAAA a partir de Insp_DD_MM_2026."""
+    """Extrai DD/MM/AAAA a partir de Insp_DD_MM_2026 ou Inspecao_DD_MM_2026."""
     m = PADRAO_ABA_DIARIA.match(nome_aba)
     if not m:
         raise ValueError(f"Nome de aba diária inválido: {nome_aba}")
@@ -122,11 +122,11 @@ def carregar_base_referencia(caminho: Path) -> set[str]:
 
 
 def listar_abas_diarias(caminho: Path) -> list[str]:
-    """Descobre abas Insp_DD_MM_2026 via regex (sem hardcode da lista)."""
+    """Descobre abas Insp_DD_MM_2026 ou Inspecao_DD_MM_2026 via regex (sem hardcode da lista)."""
     xl = pd.ExcelFile(caminho)
     abas = [nome for nome in xl.sheet_names if PADRAO_ABA_DIARIA.match(nome)]
     if not abas:
-        raise ValueError("Nenhuma aba diária Insp_DD_MM_2026 encontrada.")
+        raise ValueError("Nenhuma aba diária no padrão Insp_DD_MM_2026/Inspecao_DD_MM_2026 encontrada.")
     return abas
 
 
