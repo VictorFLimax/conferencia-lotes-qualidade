@@ -23,7 +23,7 @@ def _resolve_path(raw: str) -> Path:
     return caminho
 
 
-def _normalizar_url(raw: str) -> str:
+def _normalizar_url(raw: str, default_path: str = "html/login.html") -> str:
     """
     Aceita URL http(s)/file:// ou caminho de arquivo (relativo ao projeto).
 
@@ -32,7 +32,7 @@ def _normalizar_url(raw: str) -> str:
     """
     valor = (raw or "").strip()
     if not valor:
-        valor = "html/login.html"
+        valor = default_path
 
     if valor.startswith(("http://", "https://", "file://")):
         return valor
@@ -41,7 +41,7 @@ def _normalizar_url(raw: str) -> str:
     if caminho.exists():
         return caminho.as_uri()
 
-    # Fallbacks: nome antigo login(1).html → login.html → web/lote-teste.html
+    # Fallbacks: login.html → lote-teste.html
     for candidato in (
         RAIZ_PROJETO / "html" / "login.html",
         RAIZ_PROJETO / "html" / "lote-teste.html",
@@ -77,6 +77,7 @@ class Config:
     web_automation_enabled: bool
     web_automation_driver: str
     web_automation_url: str
+    web_form_url: str  # <-- ADICIONADO: URL do formulário/lotes
     playwright_headless: bool
     playwright_auto_install: bool
     selenium_headless: bool
@@ -138,7 +139,12 @@ class Config:
                 os.getenv("WEB_AUTOMATION_ENABLED"), default=False
             ),
             web_automation_driver=driver,
-            web_automation_url=_normalizar_url(os.getenv("WEB_AUTOMATION_URL", "")),
+            web_automation_url=_normalizar_url(
+                os.getenv("WEB_AUTOMATION_URL", ""), default_path="html/login.html"
+            ),
+            web_form_url=_normalizar_url(
+                os.getenv("WEB_FORM_URL", ""), default_path="html/lote-teste.html"
+            ),  # <-- ADICIONADO
             playwright_headless=_as_bool(os.getenv("PLAYWRIGHT_HEADLESS"), default=False),
             playwright_auto_install=_as_bool(
                 os.getenv("PLAYWRIGHT_AUTO_INSTALL"), default=True
