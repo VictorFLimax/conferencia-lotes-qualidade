@@ -1,6 +1,9 @@
 [tool.coverage.run]
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
 omit = [
-    "src/main.py",
+    "src/dispatcher.py",
     "src/bot.py",
     "src/logger.py",
     "src/maestro_observability.py",
