@@ -1,0 +1,16 @@
+[tool.coverage.run]
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+omit = [
+    "src/dispatcher.py",
+    "src/bot.py",
+    "src/logger.py",
+    "src/maestro_observability.py",
+    "src/validacao_aula22.py",
+    "src/vault_client.py",
+    "src/pages/*",
+    "src/web/*",
+    "src/web_automation_playwright.py",
+    "src/web_automation_selenium.py",
+]

@@ -16,9 +16,35 @@ services:
       - CREDENTIAL_LABEL=${CREDENTIAL_LABEL:-credencial_erp}
       - INPUT_FOLDER=${INPUT_FOLDER:-dados_entrada}
       - LOG_FILE=${LOG_FILE:-logs/execucao.log}
+      - ML_API_URL=${ML_API_URL:-http://api_ml:8000}
     volumes:
       - bot-logs:/app/logs
       - ./dados_entrada:/app/dados_entrada:ro
+    networks:
+      - bot-network
+
+  api_ml:
+    build:
+      context: .
+      dockerfile: api_ml/Dockerfile
+    container_name: conferencia-api-ml
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ML_MODEL_PATH=/app/models/classificador_lotes.pkl
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 20s
     networks:
       - bot-network
 

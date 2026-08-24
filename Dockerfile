@@ -20,5 +20,5 @@ USER botuser
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# Rodar como módulo Python (funciona com src/)
-CMD ["python", "-m", "src.main"]
+# Entry point BotCity / Runner
+CMD ["python", "bot.py"]

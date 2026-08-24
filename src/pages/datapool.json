@@ -1,0 +1,17 @@
+[
+    {
+        "numero_lote": "LOTE-2026-0001",
+        "produto_id": 1,
+        "status": "pendente"
+    },
+    {
+        "numero_lote": "LOTE-2026-0002",
+        "produto_id": 2,
+        "status": "processamento"
+    },
+    {
+        "numero_lote": "LOTE-2026-0003",
+        "produto_id": 1,
+        "status": "concluido"
+    }
+]

@@ -1,0 +1,301 @@
+lote_id,status_raw,turno,tem_obs,classe
+HIST-0001,EM AJUSTE,noite,1,revisar
+HIST-0002,AGUARDANDO,manhã,1,recusar_automatico
+HIST-0003,DEVOLVIDO,noite,1,valido_automatico
+HIST-0004,INDEFINIDO,manhã,1,revisar
+HIST-0005,AGUARDANDO,manhã,1,valido_automatico
+HIST-0006,AGUARDANDO,noite,1,valido_automatico
+HIST-0007,AGUARDANDO,manhã,1,recusar_automatico
+HIST-0008,QUARENTENA,manhã,1,valido_automatico
+HIST-0009,LIBERADO PARCIAL,tarde,0,revisar
+HIST-0010,DEVOLVIDO,noite,1,valido_automatico
+HIST-0011,RETRABALHO,tarde,0,revisar
+HIST-0012,EM AJUSTE,noite,1,revisar
+HIST-0013,RETRABALHO,noite,0,revisar
+HIST-0014,RETRABALHO,manhã,0,revisar
+HIST-0015,AGUARDANDO,manhã,1,valido_automatico
+HIST-0016,AGUARDANDO,tarde,1,valido_automatico
+HIST-0017,CANCELADO,noite,1,recusar_automatico
+HIST-0018,LIBERADO PARCIAL,noite,1,valido_automatico
+HIST-0019,QUARENTENA,tarde,1,valido_automatico
+HIST-0020,BLOQUEADO,tarde,0,recusar_automatico
+HIST-0021,QUARENTENA,manhã,1,valido_automatico
+HIST-0022,LIBERADO PARCIAL,tarde,1,valido_automatico
+HIST-0023,INDEFINIDO,tarde,1,revisar
+HIST-0024,INDEFINIDO,manhã,0,revisar
+HIST-0025,EM ANALISE,tarde,1,revisar
+HIST-0026,INDEFINIDO,tarde,1,revisar
+HIST-0027,EM AJUSTE,tarde,1,valido_automatico
+HIST-0028,RETRABALHO,tarde,1,revisar
+HIST-0029,BLOQUEADO,noite,1,recusar_automatico
+HIST-0030,QUARENTENA,manhã,1,valido_automatico
+HIST-0031,BLOQUEADO,tarde,1,recusar_automatico
+HIST-0032,INDEFINIDO,noite,1,revisar
+HIST-0033,EM ANALISE,tarde,1,revisar
+HIST-0034,RETRABALHO,manhã,0,revisar
+HIST-0035,EM AJUSTE,noite,0,revisar
+HIST-0036,DEVOLVIDO,tarde,1,valido_automatico
+HIST-0037,CANCELADO,tarde,0,recusar_automatico
+HIST-0038,BLOQUEADO,manhã,1,recusar_automatico
+HIST-0039,EM ANALISE,noite,0,revisar
+HIST-0040,RETRABALHO,noite,0,revisar
+HIST-0041,DEVOLVIDO,tarde,0,recusar_automatico
+HIST-0042,BLOQUEADO,noite,0,recusar_automatico
+HIST-0043,LIBERADO PARCIAL,noite,0,valido_automatico
+HIST-0044,DEVOLVIDO,manhã,0,recusar_automatico
+HIST-0045,LIBERADO PARCIAL,manhã,1,valido_automatico
+HIST-0046,INDEFINIDO,tarde,1,revisar
+HIST-0047,AGUARDANDO,noite,1,valido_automatico
+HIST-0048,AGUARDANDO,manhã,1,valido_automatico
+HIST-0049,EM ANALISE,manhã,1,valido_automatico
+HIST-0050,CANCELADO,tarde,0,recusar_automatico
+HIST-0051,RETRABALHO,noite,0,revisar
+HIST-0052,LIBERADO PARCIAL,manhã,0,revisar
+HIST-0053,DEVOLVIDO,tarde,0,recusar_automatico
+HIST-0054,BLOQUEADO,manhã,0,recusar_automatico
+HIST-0055,DEVOLVIDO,tarde,1,revisar
+HIST-0056,AGUARDANDO,noite,0,revisar
+HIST-0057,CANCELADO,tarde,1,recusar_automatico
+HIST-0058,AGUARDANDO,noite,0,revisar
+HIST-0059,QUARENTENA,tarde,0,revisar
+HIST-0060,EM AJUSTE,manhã,1,revisar
+HIST-0061,RETRABALHO,tarde,0,revisar
+HIST-0062,CANCELADO,manhã,0,recusar_automatico
+HIST-0063,LIBERADO PARCIAL,noite,1,valido_automatico
+HIST-0064,LIBERADO PARCIAL,tarde,1,valido_automatico
+HIST-0065,BLOQUEADO,manhã,0,recusar_automatico
+HIST-0066,INDEFINIDO,manhã,1,revisar
+HIST-0067,DEVOLVIDO,manhã,0,recusar_automatico
+HIST-0068,DEVOLVIDO,tarde,1,valido_automatico
+HIST-0069,DEVOLVIDO,noite,0,valido_automatico
+HIST-0070,BLOQUEADO,tarde,1,recusar_automatico
+HIST-0071,DEVOLVIDO,manhã,1,valido_automatico
+HIST-0072,BLOQUEADO,noite,0,recusar_automatico
+HIST-0073,INDEFINIDO,manhã,1,revisar
+HIST-0074,AGUARDANDO,tarde,1,valido_automatico
+HIST-0075,EM AJUSTE,tarde,0,revisar
+HIST-0076,DEVOLVIDO,manhã,0,recusar_automatico
+HIST-0077,CANCELADO,noite,0,recusar_automatico
+HIST-0078,RETRABALHO,tarde,1,revisar
+HIST-0079,QUARENTENA,manhã,0,revisar
+HIST-0080,RETRABALHO,noite,0,revisar
+HIST-0081,INDEFINIDO,noite,0,revisar
+HIST-0082,BLOQUEADO,manhã,0,recusar_automatico
+HIST-0083,EM ANALISE,manhã,1,revisar
+HIST-0084,LIBERADO PARCIAL,tarde,0,revisar
+HIST-0085,CANCELADO,manhã,1,recusar_automatico
+HIST-0086,QUARENTENA,manhã,0,revisar
+HIST-0087,CANCELADO,manhã,0,recusar_automatico
+HIST-0088,CANCELADO,tarde,1,recusar_automatico
+HIST-0089,EM ANALISE,tarde,0,revisar
+HIST-0090,AGUARDANDO,manhã,1,valido_automatico
+HIST-0091,INDEFINIDO,noite,0,revisar
+HIST-0092,LIBERADO PARCIAL,tarde,0,revisar
+HIST-0093,DEVOLVIDO,manhã,1,valido_automatico
+HIST-0094,AGUARDANDO,tarde,1,recusar_automatico
+HIST-0095,EM ANALISE,manhã,0,revisar
+HIST-0096,QUARENTENA,tarde,0,revisar
+HIST-0097,LIBERADO PARCIAL,tarde,1,valido_automatico
+HIST-0098,QUARENTENA,manhã,0,revisar
+HIST-0099,DEVOLVIDO,tarde,0,recusar_automatico
+HIST-0100,EM ANALISE,manhã,0,revisar
+HIST-0101,BLOQUEADO,manhã,1,recusar_automatico
+HIST-0102,LIBERADO PARCIAL,noite,0,valido_automatico
+HIST-0103,INDEFINIDO,tarde,0,revisar
+HIST-0104,RETRABALHO,manhã,1,revisar
+HIST-0105,CANCELADO,tarde,0,recusar_automatico
+HIST-0106,INDEFINIDO,manhã,0,valido_automatico
+HIST-0107,LIBERADO PARCIAL,manhã,0,valido_automatico
+HIST-0108,AGUARDANDO,tarde,1,valido_automatico
+HIST-0109,EM ANALISE,noite,0,revisar
+HIST-0110,LIBERADO PARCIAL,noite,1,recusar_automatico
+HIST-0111,AGUARDANDO,manhã,1,valido_automatico
+HIST-0112,BLOQUEADO,tarde,1,recusar_automatico
+HIST-0113,BLOQUEADO,manhã,0,recusar_automatico
+HIST-0114,RETRABALHO,noite,0,revisar
+HIST-0115,CANCELADO,manhã,0,revisar
+HIST-0116,QUARENTENA,noite,1,valido_automatico
+HIST-0117,DEVOLVIDO,manhã,1,valido_automatico
+HIST-0118,EM ANALISE,tarde,1,revisar
+HIST-0119,LIBERADO PARCIAL,noite,1,valido_automatico
+HIST-0120,DEVOLVIDO,noite,1,valido_automatico
+HIST-0121,AGUARDANDO,noite,1,valido_automatico
+HIST-0122,EM AJUSTE,manhã,0,revisar
+HIST-0123,AGUARDANDO,tarde,0,revisar
+HIST-0124,INDEFINIDO,tarde,1,revisar
+HIST-0125,RETRABALHO,manhã,1,revisar
+HIST-0126,LIBERADO PARCIAL,noite,1,valido_automatico
+HIST-0127,DEVOLVIDO,noite,0,recusar_automatico
+HIST-0128,DEVOLVIDO,noite,0,recusar_automatico
+HIST-0129,EM ANALISE,tarde,1,revisar
+HIST-0130,EM AJUSTE,manhã,0,revisar
+HIST-0131,LIBERADO PARCIAL,tarde,1,valido_automatico
+HIST-0132,DEVOLVIDO,manhã,1,recusar_automatico
+HIST-0133,EM ANALISE,noite,1,revisar
+HIST-0134,EM AJUSTE,noite,0,revisar
+HIST-0135,CANCELADO,noite,0,recusar_automatico
+HIST-0136,INDEFINIDO,noite,1,revisar
+HIST-0137,EM AJUSTE,manhã,1,recusar_automatico
+HIST-0138,INDEFINIDO,tarde,0,revisar
+HIST-0139,CANCELADO,manhã,1,recusar_automatico
+HIST-0140,EM ANALISE,tarde,1,revisar
+HIST-0141,LIBERADO PARCIAL,tarde,0,revisar
+HIST-0142,CANCELADO,noite,1,recusar_automatico
+HIST-0143,CANCELADO,noite,0,recusar_automatico
+HIST-0144,LIBERADO PARCIAL,tarde,1,valido_automatico
+HIST-0145,LIBERADO PARCIAL,noite,0,revisar
+HIST-0146,QUARENTENA,noite,1,valido_automatico
+HIST-0147,BLOQUEADO,tarde,0,recusar_automatico
+HIST-0148,DEVOLVIDO,manhã,0,recusar_automatico
+HIST-0149,DEVOLVIDO,noite,0,recusar_automatico
+HIST-0150,CANCELADO,tarde,1,recusar_automatico
+HIST-0151,DEVOLVIDO,tarde,0,recusar_automatico
+HIST-0152,EM ANALISE,noite,0,revisar
+HIST-0153,LIBERADO PARCIAL,tarde,0,revisar
+HIST-0154,QUARENTENA,tarde,0,revisar
+HIST-0155,CANCELADO,manhã,1,valido_automatico
+HIST-0156,AGUARDANDO,noite,1,valido_automatico
+HIST-0157,DEVOLVIDO,tarde,0,recusar_automatico
+HIST-0158,AGUARDANDO,tarde,1,valido_automatico
+HIST-0159,INDEFINIDO,manhã,0,revisar
+HIST-0160,DEVOLVIDO,noite,0,recusar_automatico
+HIST-0161,EM AJUSTE,manhã,1,revisar
+HIST-0162,DEVOLVIDO,manhã,1,recusar_automatico
+HIST-0163,QUARENTENA,noite,0,revisar
+HIST-0164,AGUARDANDO,manhã,1,valido_automatico
+HIST-0165,LIBERADO PARCIAL,manhã,1,valido_automatico
+HIST-0166,DEVOLVIDO,manhã,0,valido_automatico
+HIST-0167,QUARENTENA,tarde,1,valido_automatico
+HIST-0168,QUARENTENA,manhã,1,recusar_automatico
+HIST-0169,QUARENTENA,noite,1,valido_automatico
+HIST-0170,QUARENTENA,noite,1,recusar_automatico
+HIST-0171,AGUARDANDO,manhã,0,revisar
+HIST-0172,CANCELADO,tarde,1,recusar_automatico
+HIST-0173,EM AJUSTE,noite,0,revisar
+HIST-0174,CANCELADO,manhã,0,recusar_automatico
+HIST-0175,EM AJUSTE,noite,1,revisar
+HIST-0176,DEVOLVIDO,tarde,0,recusar_automatico
+HIST-0177,EM AJUSTE,manhã,0,revisar
+HIST-0178,QUARENTENA,tarde,0,recusar_automatico
+HIST-0179,CANCELADO,tarde,1,recusar_automatico
+HIST-0180,INDEFINIDO,noite,0,revisar
+HIST-0181,EM ANALISE,tarde,0,revisar
+HIST-0182,INDEFINIDO,manhã,0,revisar
+HIST-0183,INDEFINIDO,manhã,1,revisar
+HIST-0184,CANCELADO,manhã,0,recusar_automatico
+HIST-0185,INDEFINIDO,noite,0,revisar
+HIST-0186,DEVOLVIDO,manhã,1,valido_automatico
+HIST-0187,BLOQUEADO,tarde,0,recusar_automatico
+HIST-0188,AGUARDANDO,tarde,1,valido_automatico
+HIST-0189,AGUARDANDO,noite,0,revisar
+HIST-0190,EM ANALISE,manhã,1,revisar
+HIST-0191,EM AJUSTE,tarde,0,revisar
+HIST-0192,EM AJUSTE,tarde,0,revisar
+HIST-0193,INDEFINIDO,tarde,1,revisar
+HIST-0194,EM ANALISE,manhã,0,revisar
+HIST-0195,LIBERADO PARCIAL,manhã,0,revisar
+HIST-0196,INDEFINIDO,tarde,1,revisar
+HIST-0197,INDEFINIDO,tarde,1,revisar
+HIST-0198,QUARENTENA,tarde,1,valido_automatico
+HIST-0199,INDEFINIDO,manhã,0,revisar
+HIST-0200,RETRABALHO,tarde,0,valido_automatico
+HIST-0201,QUARENTENA,noite,1,valido_automatico
+HIST-0202,EM AJUSTE,tarde,0,revisar
+HIST-0203,LIBERADO PARCIAL,manhã,0,recusar_automatico
+HIST-0204,AGUARDANDO,noite,1,valido_automatico
+HIST-0205,QUARENTENA,noite,0,revisar
+HIST-0206,EM ANALISE,manhã,1,revisar
+HIST-0207,RETRABALHO,manhã,1,revisar
+HIST-0208,AGUARDANDO,manhã,1,valido_automatico
+HIST-0209,EM ANALISE,noite,0,revisar
+HIST-0210,RETRABALHO,manhã,1,revisar
+HIST-0211,BLOQUEADO,tarde,0,recusar_automatico
+HIST-0212,AGUARDANDO,noite,1,valido_automatico
+HIST-0213,DEVOLVIDO,manhã,1,valido_automatico
+HIST-0214,EM ANALISE,manhã,1,revisar
+HIST-0215,AGUARDANDO,manhã,0,revisar
+HIST-0216,EM AJUSTE,tarde,0,revisar
+HIST-0217,AGUARDANDO,manhã,0,revisar
+HIST-0218,DEVOLVIDO,manhã,1,valido_automatico
+HIST-0219,BLOQUEADO,manhã,0,recusar_automatico
+HIST-0220,LIBERADO PARCIAL,tarde,0,revisar
+HIST-0221,EM AJUSTE,noite,1,revisar
+HIST-0222,INDEFINIDO,tarde,0,revisar
+HIST-0223,EM ANALISE,tarde,0,revisar
+HIST-0224,LIBERADO PARCIAL,tarde,1,valido_automatico
+HIST-0225,RETRABALHO,manhã,0,revisar
+HIST-0226,EM ANALISE,noite,0,revisar
+HIST-0227,INDEFINIDO,manhã,1,revisar
+HIST-0228,RETRABALHO,tarde,1,revisar
+HIST-0229,AGUARDANDO,tarde,0,revisar
+HIST-0230,DEVOLVIDO,noite,1,valido_automatico
+HIST-0231,EM ANALISE,manhã,0,revisar
+HIST-0232,BLOQUEADO,manhã,1,recusar_automatico
+HIST-0233,DEVOLVIDO,tarde,0,recusar_automatico
+HIST-0234,INDEFINIDO,manhã,0,revisar
+HIST-0235,BLOQUEADO,tarde,1,recusar_automatico
+HIST-0236,QUARENTENA,tarde,1,valido_automatico
+HIST-0237,AGUARDANDO,tarde,1,valido_automatico
+HIST-0238,BLOQUEADO,noite,1,recusar_automatico
+HIST-0239,LIBERADO PARCIAL,manhã,0,revisar
+HIST-0240,QUARENTENA,tarde,1,valido_automatico
+HIST-0241,INDEFINIDO,tarde,1,revisar
+HIST-0242,CANCELADO,manhã,1,recusar_automatico
+HIST-0243,LIBERADO PARCIAL,tarde,0,revisar
+HIST-0244,BLOQUEADO,manhã,1,recusar_automatico
+HIST-0245,LIBERADO PARCIAL,noite,1,valido_automatico
+HIST-0246,RETRABALHO,noite,0,revisar
+HIST-0247,AGUARDANDO,tarde,0,revisar
+HIST-0248,INDEFINIDO,noite,0,revisar
+HIST-0249,DEVOLVIDO,manhã,0,recusar_automatico
+HIST-0250,DEVOLVIDO,manhã,0,recusar_automatico
+HIST-0251,CANCELADO,noite,1,recusar_automatico
+HIST-0252,EM AJUSTE,noite,1,revisar
+HIST-0253,LIBERADO PARCIAL,tarde,0,revisar
+HIST-0254,CANCELADO,tarde,0,revisar
+HIST-0255,DEVOLVIDO,tarde,0,revisar
+HIST-0256,LIBERADO PARCIAL,tarde,1,valido_automatico
+HIST-0257,QUARENTENA,manhã,0,revisar
+HIST-0258,INDEFINIDO,tarde,1,revisar
+HIST-0259,QUARENTENA,noite,1,valido_automatico
+HIST-0260,CANCELADO,manhã,1,recusar_automatico
+HIST-0261,QUARENTENA,noite,0,revisar
+HIST-0262,AGUARDANDO,noite,0,revisar
+HIST-0263,QUARENTENA,tarde,0,revisar
+HIST-0264,INDEFINIDO,manhã,0,revisar
+HIST-0265,INDEFINIDO,noite,1,revisar
+HIST-0266,EM AJUSTE,tarde,0,revisar
+HIST-0267,DEVOLVIDO,tarde,0,recusar_automatico
+HIST-0268,EM AJUSTE,manhã,0,valido_automatico
+HIST-0269,RETRABALHO,tarde,1,revisar
+HIST-0270,EM ANALISE,tarde,0,revisar
+HIST-0271,DEVOLVIDO,noite,1,valido_automatico
+HIST-0272,INDEFINIDO,tarde,1,revisar
+HIST-0273,INDEFINIDO,manhã,1,revisar
+HIST-0274,DEVOLVIDO,noite,1,valido_automatico
+HIST-0275,EM ANALISE,tarde,0,revisar
+HIST-0276,BLOQUEADO,manhã,0,recusar_automatico
+HIST-0277,RETRABALHO,noite,0,revisar
+HIST-0278,BLOQUEADO,manhã,1,recusar_automatico
+HIST-0279,EM ANALISE,tarde,1,revisar
+HIST-0280,AGUARDANDO,tarde,1,valido_automatico
+HIST-0281,EM ANALISE,noite,0,revisar
+HIST-0282,LIBERADO PARCIAL,manhã,1,valido_automatico
+HIST-0283,AGUARDANDO,tarde,0,revisar
+HIST-0284,DEVOLVIDO,noite,0,revisar
+HIST-0285,DEVOLVIDO,noite,0,valido_automatico
+HIST-0286,BLOQUEADO,tarde,0,recusar_automatico
+HIST-0287,BLOQUEADO,tarde,1,valido_automatico
+HIST-0288,QUARENTENA,manhã,1,revisar
+HIST-0289,QUARENTENA,noite,0,revisar
+HIST-0290,BLOQUEADO,tarde,0,recusar_automatico
+HIST-0291,CANCELADO,manhã,0,recusar_automatico
+HIST-0292,CANCELADO,manhã,0,recusar_automatico
+HIST-0293,BLOQUEADO,tarde,0,recusar_automatico
+HIST-0294,RETRABALHO,tarde,1,revisar
+HIST-0295,INDEFINIDO,manhã,0,revisar
+HIST-0296,RETRABALHO,noite,0,revisar
+HIST-0297,RETRABALHO,manhã,1,revisar
+HIST-0298,RETRABALHO,tarde,0,revisar
+HIST-0299,QUARENTENA,noite,0,valido_automatico
+HIST-0300,RETRABALHO,manhã,0,recusar_automatico
