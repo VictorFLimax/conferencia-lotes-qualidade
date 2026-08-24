@@ -1,4 +1,12 @@
 """Ensaio local de sabotagem: API inacessível, bot não para."""
+
+from pathlib import Path
+import sys
+
+RAIZ = Path(__file__).resolve().parents[1]
+if str(RAIZ) not in sys.path:
+    sys.path.insert(0, str(RAIZ))
+    
 from src.item_processor import REVISAO_ML_OFFLINE, processar_ambiguos_com_ml
 from src.ml_client import MLClient
 from src.validacao_aula22 import (
