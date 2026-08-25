@@ -8,8 +8,8 @@ from botcity.maestro import BotMaestroSDK
 logger = logging.getLogger(__name__)
 
 # ATENÇÃO: Substitua 'victor' pelo seu nome real conforme exigido no enunciado
-BOT_DISPATCHER = "victor-dispatcher-v1"
-BOT_CONFERENCIA = "victor-conferencia-v1"
+BOT_DISPATCHER = "andre-dispatcher-v1"
+BOT_CONFERENCIA = "gustavo-conferencia-v1"
 BOT_RELATORIO = "victor-relatorio-v1"
 
 class OrquestradorMultiBot:
