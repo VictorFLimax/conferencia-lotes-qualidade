@@ -8,8 +8,10 @@ def gerar_relatorio_divergencias(resultados: List[Dict[str, Any]], caminho_saida
     if not resultados:
         raise ValueError("Nenhum resultado fornecido para geração do relatório.")
 
+    # Filtra apenas os itens que tiveram divergência (não aprovados)
     com_divergencias = [r for r in resultados if not r.get("aprovado", True)]
     
+    # Colunas exigidas pelo enunciado para rastreabilidade
     colunas = [
         "numero_lote", "codigo_produto", "regra", "mensagem", 
         "valor_esperado", "valor_encontrado", "origem_decisao", "confianca_ml"
