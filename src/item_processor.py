@@ -1,155 +1,76 @@
-"""Encaminhamento de lotes ambíguos via ML — sem predição no bot.
-
-O motor de regras (validar_registro) continua dono da classificação
-Válido/Divergência/Ambíguo/Erro. Aqui só os Ambíguos passam pelo MLClient.
-
-Se a API cair no meio do lote de 10 dias, cada registro afetado recebe
-REVISAO_ML_OFFLINE e o processamento segue até o fim.
-"""
+"""Processamento de itens com decisão híbrida RPA + ML (S10-B)."""
 from __future__ import annotations
-
-import json
 import logging
-from dataclasses import asdict, dataclass
-from pathlib import Path
+from dataclasses import dataclass
 from typing import Any
 
-from src.ml_client import MLClient, PredictionResult
-from src.validacao_aula22 import CLASSIFICACAO_AMBIGUO, RegistroValidado
+from src.config import Config
+from src.base_referencia import BaseReferencia
+from src.validacao import ConferenciaLotes, registro_de_linha, CamposObrigatoriosVaziosError
+from src.classificador_divergencia import ClassificadorDivergencia, ResultadoClassificacao
 
-REVISAO_ML_OFFLINE = "REVISAO_ML_OFFLINE"
-NIVEL_ALTA = "alta"
-NIVEL_MEDIA = "média"
-NIVEL_BAIXA = "baixa"
-ACAO_REVISAR = "revisar"
-ACAO_REVISAR_PRIORITARIO = "revisar_prioritario"
-
-logger = logging.getLogger("auditoria_ml")
-
+logger = logging.getLogger(__name__)
 
 @dataclass
-class DecisaoML:
-    lote_id: str
-    classe: str
-    probabilidade: float | None
-    nivel_confianca: str
-    latencia_ms: float | None
-    acao: str
-    offline: bool
-    status_raw: str = ""
-    turno: str = ""
+class ResultadoProcessamento:
+    numero_lote: str
+    aprovado: bool
+    mensagem: str
+    causa_provavel: str = "nao_aplicavel"
+    origem_decisao: str = "nao_aplicavel"
+    confianca_ml: float = 0.0
+    divergencias: list[dict] = None  # Para compatibilidade com o relatório
 
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+def processar_item(fields: dict[str, Any], config: Config) -> ResultadoProcessamento:
+    numero_lote = str(fields.get("numero_lote") or fields.get("lote_id") or "DESCONHECIDO")
+    logger.info("Iniciando processamento do lote: %s", numero_lote)
 
-    def to_excel_row(self) -> dict[str, Any]:
-        return {
-            "Lote": self.lote_id,
-            "Classe prevista": self.classe,
-            "Probabilidade": self.probabilidade,
-            "Nível de confiança": self.nivel_confianca,
-            "Latência (ms)": self.latencia_ms,
-            "Ação aplicada": self.acao,
-            "API indisponível": "sim" if self.offline else "não",
-            "Status original": self.status_raw,
-            "Turno": self.turno,
-        }
+    try:
+        # 1. Decisão de negócio APENAS pelas regras RN01-RN03
+        registro = registro_de_linha(fields)
+        base = BaseReferencia(config)
+        conferencia = ConferenciaLotes(base)
+        resultado_validacao = conferencia.validar_registro(registro)
 
+        if resultado_validacao.aprovado:
+            logger.info("Lote %s APROVADO pelas regras de negócio.", numero_lote)
+            return ResultadoProcessamento(
+                numero_lote=numero_lote, aprovado=True, mensagem="APROVADO",
+                causa_provavel="nao_aplicavel", origem_decisao="regras", confianca_ml=1.0, divergencias=[]
+            )
 
-def _tem_obs(registro: RegistroValidado) -> bool:
-    return bool(str(registro.observacao or "").strip())
+        # 2. Se houver divergência, aciona o ClassificadorDivergencia (ML)
+        divergencias_dict = [{"regra": d.regra, "mensagem": d.mensagem, "valor_esperado": d.valor_esperado, "valor_encontrado": d.valor_encontrado} for d in resultado_validacao.divergencias]
+        msgs = [f"[{d.regra}] {d.mensagem}" for d in resultado_validacao.divergencias]
+        erro_msg = " | ".join(msgs)
+        logger.warning("Lote %s com DIVERGÊNCIA: %s", numero_lote, erro_msg)
 
+        classificador = ClassificadorDivergencia()
+        try:
+            observacao = str(fields.get("observacao", ""))
+            classificacao: ResultadoClassificacao = classificador.classificar(
+                observacao=observacao, regras_violadas=erro_msg
+            )
+        finally:
+            classificador.close()
 
-def _lote_para_api(registro: RegistroValidado) -> dict[str, Any]:
-    return {
-        "lote_id": registro.lote_id,
-        "status_raw": registro.status_original or registro.status_normalizado,
-        "turno": registro.turno,
-        "tem_obs": _tem_obs(registro),
-    }
-
-
-def encaminhar(pred: PredictionResult | None, registro: RegistroValidado) -> DecisaoML:
-    """Traduz o retorno do MLClient em ação operacional. Sem predição aqui."""
-    if pred is None:
-        return DecisaoML(
-            lote_id=registro.lote_id,
-            classe=REVISAO_ML_OFFLINE,
-            probabilidade=None,
-            nivel_confianca="indisponível",
-            latencia_ms=None,
-            acao=REVISAO_ML_OFFLINE,
-            offline=True,
-            status_raw=registro.status_original,
-            turno=registro.turno,
+        return ResultadoProcessamento(
+            numero_lote=numero_lote, aprovado=False, mensagem=erro_msg,
+            causa_provavel=classificacao.causa_provavel,
+            origem_decisao=classificacao.origem_decisao,
+            confianca_ml=classificacao.confianca_ml,
+            divergencias=divergencias_dict
         )
 
-    nivel = (pred.nivel_confianca or "").strip().lower()
-    if nivel == NIVEL_ALTA:
-        acao = pred.acao or pred.classe
-    elif nivel == NIVEL_MEDIA:
-        acao = ACAO_REVISAR
-    elif nivel == NIVEL_BAIXA:
-        acao = ACAO_REVISAR_PRIORITARIO
-    else:
-        acao = ACAO_REVISAR
-
-    return DecisaoML(
-        lote_id=registro.lote_id or pred.lote_id,
-        classe=pred.classe,
-        probabilidade=pred.probabilidade,
-        nivel_confianca=pred.nivel_confianca,
-        latencia_ms=pred.latencia_ms,
-        acao=acao,
-        offline=False,
-        status_raw=registro.status_original,
-        turno=registro.turno,
-    )
-
-
-def registrar_decisao(decisao: DecisaoML, caminho_jsonl: Path | None = None) -> None:
-    """Log estruturado (JSON por linha) para reconstruir a decisão sem abrir o código."""
-    payload = {
-        "evento": "decisao_ml",
-        "lote_id": decisao.lote_id,
-        "classe": decisao.classe,
-        "probabilidade": decisao.probabilidade,
-        "nivel_confianca": decisao.nivel_confianca,
-        "latencia_ms": decisao.latencia_ms,
-        "acao": decisao.acao,
-        "offline": decisao.offline,
-        "status_raw": decisao.status_raw,
-        "turno": decisao.turno,
-    }
-    linha = json.dumps(payload, ensure_ascii=False)
-    logger.info(linha)
-    if caminho_jsonl is not None:
-        caminho_jsonl.parent.mkdir(parents=True, exist_ok=True)
-        with caminho_jsonl.open("a", encoding="utf-8") as fh:
-            fh.write(linha + "\n")
-
-
-def processar_ambiguos_com_ml(
-    registros: list[RegistroValidado],
-    cliente: MLClient | None = None,
-    caminho_jsonl: Path | None = None,
-) -> list[DecisaoML]:
-    """Percorre só os ambíguos. Nunca interrompe o lote — falha vira REVISAO_ML_OFFLINE."""
-    proprio = cliente is None
-    ml = cliente or MLClient()
-    decisoes: list[DecisaoML] = []
-    try:
-        for registro in registros:
-            if registro.classificacao != CLASSIFICACAO_AMBIGUO:
-                continue
-            try:
-                pred = ml.classificar(_lote_para_api(registro))
-            except Exception:
-                pred = None
-            decisao = encaminhar(pred, registro)
-            registrar_decisao(decisao, caminho_jsonl=caminho_jsonl)
-            decisoes.append(decisao)
-    finally:
-        if proprio:
-            ml.fechar()
-    return decisoes
+    except CamposObrigatoriosVaziosError as exc:
+        logger.warning("ValidationError no lote %s: %s", numero_lote, exc)
+        return ResultadoProcessamento(
+            numero_lote=numero_lote, aprovado=False, mensagem=str(exc),
+            causa_provavel="erro_validacao", origem_decisao="fallback", confianca_ml=0.0, divergencias=[]
+        )
+    except Exception as exc:
+        logger.error("Erro inesperado no lote %s: %s", numero_lote, exc, exc_info=True)
+        return ResultadoProcessamento(
+            numero_lote=numero_lote, aprovado=False, mensagem=f"Falha sistêmica: {exc}",
+            causa_provavel="erro_sistemico", origem_decisao="fallback", confianca_ml=0.0, divergencias=[]
+        )

@@ -1,31 +1,41 @@
-"""Geração do relatório de divergências em Excel."""
+"""Geração do relatório de divergências em Excel com rastreabilidade de ML (S10-B)."""
 from __future__ import annotations
 from pathlib import Path
 import pandas as pd
-from src.validacao import Divergencia, ResultadoValidacao
+from typing import List, Dict, Any
 
-def _divergencias_para_dataframe(resultados: list[ResultadoValidacao]) -> pd.DataFrame:
-    linhas: list[dict[str, object]] = []
-    for resultado in resultados:
-        for div in resultado.divergencias:
-            linhas.append({
-                "numero_lote": resultado.registro.numero_lote,
-                "codigo_produto": resultado.registro.codigo_produto,
-                "regra": div.regra,
-                "mensagem": div.mensagem,
-                "valor_esperado": div.valor_esperado,
-                "valor_encontrado": div.valor_encontrado,
-            })
-    return pd.DataFrame(linhas, columns=["numero_lote", "codigo_produto", "regra", "mensagem", "valor_esperado", "valor_encontrado"])
-
-def gerar_relatorio_divergencias(resultados: list[ResultadoValidacao], caminho_saida: Path) -> Path:
+def gerar_relatorio_divergencias(resultados: List[Dict[str, Any]], caminho_saida: Path) -> Path:
     if not resultados:
         raise ValueError("Nenhum resultado fornecido para geração do relatório.")
-    com_divergencias = [r for r in resultados if r.divergencias]
-    if not com_divergencias:
-        raise ValueError("Nenhuma divergência encontrada nos resultados.")
+
+    # Filtra apenas os itens que tiveram divergência (não aprovados)
+    com_divergencias = [r for r in resultados if not r.get("aprovado", True)]
     
+    # Colunas exigidas pelo enunciado para rastreabilidade
+    colunas = [
+        "numero_lote", "codigo_produto", "regra", "mensagem", 
+        "valor_esperado", "valor_encontrado", "origem_decisao", "confianca_ml"
+    ]
+
+    if not com_divergencias:
+        df = pd.DataFrame(columns=colunas)
+    else:
+        linhas = []
+        for r in com_divergencias:
+            divergencias = r.get("divergencias") or [{"regra": "GERAL", "mensagem": r.get("mensagem", ""), "valor_esperado": "", "valor_encontrado": ""}]
+            for div in divergencias:
+                linhas.append({
+                    "numero_lote": r.get("numero_lote", "DESCONHECIDO"),
+                    "codigo_produto": r.get("codigo_produto", "DESCONHECIDO"),
+                    "regra": div.get("regra", "GERAL"),
+                    "mensagem": div.get("mensagem", r.get("mensagem", "")),
+                    "valor_esperado": div.get("valor_esperado", ""),
+                    "valor_encontrado": div.get("valor_encontrado", ""),
+                    "origem_decisao": r.get("origem_decisao", "fallback"),
+                    "confianca_ml": r.get("confianca_ml", 0.0)
+                })
+        df = pd.DataFrame(linhas, columns=colunas)
+
     caminho_saida.parent.mkdir(parents=True, exist_ok=True)
-    df = _divergencias_para_dataframe(com_divergencias)
     df.to_excel(caminho_saida, index=False, engine="openpyxl")
     return caminho_saida

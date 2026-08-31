@@ -561,6 +561,20 @@ A API (`api_ml`) sobe com `uvicorn` na porta 8000 e healthcheck em `GET /health`
 
 ---
 
+## 🚀 Configuração e Simulação de Crise (S10-B)
+
+Este pipeline foi projetado para operar com resiliência total, degradando com elegância sob falhas de infraestrutura ou de componentes opcionais (ML).
+
+### 1. Orquestração Multi-Bot
+O pipeline é orquestrado pelo script `src/orquestrador.py`, que dispara sequencialmente 3 bots via `create_task()` no Maestro, garantindo a cadeia de execução rastreável:
+1. `andre-dispatcher-v1` (Alimenta a fila do DataPool)
+2. `gustavo-conferencia-v1` (Processa, valida RN01-RN03 e enriquece com ML)
+3. `victor-relatorio-v1` (Gera o relatório final com `origem_decisao` e `confianca_ml`)
+
+Para executar a orquestração completa localmente:
+```bash
+python -m src.orquestrador
+
 ## Stack
 
 | Tecnologia | Uso |
