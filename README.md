@@ -1,17 +1,57 @@
-# Conferência de Lotes — Qualidade
+# Conferência de Lotes — Qualidade & Capstone Hyperautomation (LG / AX Academy)
 
-Bot de automação em Python para **conferência e auditoria de lotes de qualidade**, integrado ao [BotCity Maestro](https://botcity.dev/), com automação web via **Playwright** ou **Selenium**, screenshots, Execution Log e Result Files.
+> **PROJETO FINAL DE ENCERRAMENTO (240H) — CONVÊNIO IFAM / POLO DE INOVAÇÃO (INOVA) / LG ELECTRONICS DO BRASIL**  
+> **Pipeline Multi-Bot Híbrido (Desktop + Web) com Decisão RPA+ML, Resiliência Total e Coexistência de Orquestradores (BotCity → Smart Office)**  
+> **Governança: The DX Way**
 
 **Repositório:** [https://github.com/VictorFLimax/conferencia-lotes-qualidade](https://github.com/VictorFLimax/conferencia-lotes-qualidade)
 
 ### Equipe
+| Integrante | Função no Squad |
+| :--- | :--- |
+| **Victor** | Arquiteto de Hiperautomação / Lead RPA |
+| **André** | Engenheiro de Software / Resiliência & Orquestração |
+| **Gustavo** | Engenheiro de Machine Learning / Decisão Híbrida |
+| **Mouriem** | Engenheiro de QA & Governança / Auditoria The DX Way |
 
-| Integrante |
-|------------|
-| Victor |
-| André |
-| Gustavo |
-| Mouriem |
+---
+
+## 🚀 Como Executar o Pipeline Capstone (Execução Imediata)
+
+### 1. Instalação do Ambiente
+```bash
+python -m venv .venv
+# No Windows:
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 2. Execução Completa de Ponta a Ponta
+Inicia automaticamente os servidores mocks (Portal Web B2B na porta 8001 e Microsserviço de ML na porta 8002), gerencia a sessão gráfica com `LockManager`, consolida regras RN01–RN04 e gera relatórios de auditoria:
+```bash
+python run_pipeline.py
+```
+*Artefatos gerados:* `logs/relatorio_auditoria.xlsx` e `logs/relatorio_auditoria.csv`.
+
+### 3. Suite de Sabotagem ao Vivo (Validação dos 6 Cenários da Banca)
+Executa a validação automatizada dos 6 cenários exigidos pela banca avaliadora:
+```bash
+python tests/run_sabotage_scenarios.py
+```
+
+### 4. Testes Unitários com Pytest
+```bash
+pytest tests/test_unit.py -v
+```
+
+---
+
+## 📑 Documentação do Capstone (The DX Way)
+Todos os entregáveis formais estão localizados na pasta `docs/`:
+1. [docs/PDD.md](file:///c:/Users/DELL/OneDrive/Documentos/Nova%20pasta/conferencia-lotes-qualidade/docs/PDD.md): Process Definition Document completo (AS-IS vs TO-BE, 5 bots, matriz de severidade e RNs).
+2. [docs/PLANO_MIGRACAO.md](file:///c:/Users/DELL/OneDrive/Documentos/Nova%20pasta/conferencia-lotes-qualidade/docs/PLANO_MIGRACAO.md): Estratégia de coexistência, Cutover com Smoke Test de 5 dias e Plano de Rollback com RTO < 15 min.
+3. [docs/ARQUITETURA.md](file:///c:/Users/DELL/OneDrive/Documentos/Nova%20pasta/conferencia-lotes-qualidade/docs/ARQUITETURA.md): Diagramas Mermaid (Sequência, Decisão RPA+ML, Resiliência e Concorrência de Runners).
+4. [docs/GUIA_DEFESA_BANCA.md](file:///c:/Users/DELL/OneDrive/Documentos/Nova%20pasta/conferencia-lotes-qualidade/docs/GUIA_DEFESA_BANCA.md): Respostas fundamentadas para as 5 perguntas da banca + Roteiro minuto a minuto do Pitch de 10 min.
 
 ---
 
